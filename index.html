@@ -164,6 +164,30 @@
       "Rularn", "Ordos", "Thane", "Rahgbat"
     ];
 
+    const poiDevelopments = [
+      "Cataclysm", "Over/connected to a large tomb", "Being attacked by an invader", "Being attacked by an invader",
+      "Home to an oracle", "Around/over a sleeping dragon", "Abandoned and in ruins", "Abandoned and in ruins",
+      "Guarded by its current residents", "Guarded by its current residents", "Under siege by a warband",
+      "Home to a religious cult", "Where a secret circle of wizards meets", "Where a secret circle of wizards meets",
+      "Occupied by a self-titled king/queen", "Controlled by a malevolent sorcerer", "Controlled by a malevolent sorcerer",
+      "Protected by an age-old guardian", "Hiding a great treasure", "With a door to another plane"
+    ];
+
+    const cataclysmTypes = [
+      "Volcano", "Fire", "Earthquake", "Storm",
+      "Flood", "War", "Pestilence", "Magical disaster"
+    ];
+
+    const baseTerrainTypes = [
+      { name: "Desert", grayscale: '#dddddd', color: '#fceabb' },
+      { name: "Swamp", grayscale: '#bbbbbb', color: '#c6e2c1' },
+      { name: "Grassland", grayscale: '#999999', color: '#d5f5c9' },
+      { name: "Forest", grayscale: '#777777', color: '#b0d9af' },
+      { name: "River", grayscale: '#555555', color: '#ccefff' },
+      { name: "Ocean", grayscale: '#333333', color: '#b2d4ee' },
+      { name: "Mountain", grayscale: '#111111', color: '#ddd3c1' }
+    ];
+
     function seededRandom(seed) {
       let x = Math.sin(seed++) * 10000;
       return x - Math.floor(x);
@@ -175,22 +199,10 @@
       return choices[Math.floor(val * choices.length)];
     }
 
-    function seededD6(seedRef) {
+    function seededDie(seedRef, sides) {
       const val = seededRandom(seedRef.value);
       seedRef.value++;
-      return Math.floor(val * 6) + 1;
-    }
-
-    function seededD8(seedRef) {
-      const val = seededRandom(seedRef.value);
-      seedRef.value++;
-      return Math.floor(val * 8) + 1;
-    }
-
-    function seededD20(seedRef) {
-      const val = seededRandom(seedRef.value);
-      seedRef.value++;
-      return Math.floor(val * 20);
+      return Math.floor(val * sides) + 1;
     }
 
     function dangerLevelSymbol(roll) {
@@ -199,16 +211,6 @@
       if (roll <= 5) return 'R';
       return 'D';
     }
-
-    const baseTerrainTypes = [
-      { name: "Desert", grayscale: '#dddddd', color: '#fceabb' },
-      { name: "Swamp", grayscale: '#bbbbbb', color: '#c6e2c1' },
-      { name: "Grassland", grayscale: '#999999', color: '#d5f5c9' },
-      { name: "Forest", grayscale: '#777777', color: '#b0d9af' },
-      { name: "River", grayscale: '#555555', color: '#ccefff' },
-      { name: "Ocean", grayscale: '#333333', color: '#b2d4ee' },
-      { name: "Mountain", grayscale: '#111111', color: '#ddd3c1' }
-    ];
 
     function getTerrainColor(terrain) {
       return useGrayscale ? terrain.grayscale : terrain.color;
@@ -285,7 +287,6 @@
     function drawGrid(drawOnly = false) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       if (!drawOnly) {
-        terrainMap.clear();
         dangerMap.clear();
         poiMap.clear();
         hexNumberMap.clear();
@@ -295,6 +296,7 @@
       const coords = getHexSpiral(MAP_RADIUS);
       const seedRef = { value: seed };
       let previousTerrain = seededChoice(seedRef, baseTerrainTypes);
+
       const poiEntries = [];
 
       coords.forEach(({ q, r }, index) => {
@@ -303,7 +305,7 @@
         hexNumberMap.set(key, hexId);
 
         let terrain = terrainMap.get(key);
-        if (!drawOnly || !terrain) {
+        if (!terrain) {
           if (seededRandom(seedRef.value++) < 1 / 36) {
             let newTerrain;
             do {
@@ -317,25 +319,33 @@
 
         let danger = dangerMap.get(key);
         if (!drawOnly || !danger) {
-          const dangerRoll = seededD6(seedRef);
+          const dangerRoll = seededDie(seedRef, 6);
           danger = dangerLevelSymbol(dangerRoll);
           dangerMap.set(key, danger);
         }
 
         let hasPOI = poiMap.has(key);
-        if (!drawOnly && seededD6(seedRef) === 1) {
-          let poiType = poiDescriptions[seededD20(seedRef)];
+        if (!drawOnly && seededDie(seedRef, 6) === 1) {
+          let poiType = poiDescriptions[seededDie(seedRef, 20) - 1];
 
           if (poiType === "Village") {
-            poiType += ": " + villageNames[seededD8(seedRef) - 1];
+            poiType += ": " + villageNames[seededDie(seedRef, 8) - 1];
           } else if (poiType === "Town") {
-            poiType += ": " + townNames[seededD8(seedRef) - 1];
+            poiType += ": " + townNames[seededDie(seedRef, 8) - 1];
           } else if (poiType === "City") {
-            poiType += ": " + cityNames[seededD8(seedRef) - 1];
+            poiType += ": " + cityNames[seededDie(seedRef, 8) - 1];
           }
 
-          poiMap.set(key, poiType);
-          poiEntries.push(`<li><strong>${hexId}</strong>: ${poiType}</li>`);
+          const developmentRoll = seededDie(seedRef, 20);
+          let development = poiDevelopments[developmentRoll - 1];
+
+          if (development === "Cataclysm") {
+            const cataclysm = cataclysmTypes[seededDie(seedRef, 8) - 1];
+            development += `: ${cataclysm}`;
+          }
+
+          const fullPOI = `${poiType} (${development})`;
+          poiMap.set(key, fullPOI);
           hasPOI = true;
         }
 
@@ -435,6 +445,7 @@
     drawGrid();
     updateLegendSwatches();
   </script>
+
 </body>
 
 </html>
