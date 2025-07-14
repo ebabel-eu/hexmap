@@ -77,9 +77,18 @@
     .context-menu-item:hover {
       background-color: #eee;
     }
+
+    #toggleColorMode {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 2;
+    }
   </style>
 </head>
 <body>
+
+  <button id="toggleColorMode">Toggle Color Mode</button>
 
   <div class="legend">
     <ul>
@@ -107,23 +116,30 @@
     const canvas = document.getElementById('hexMap');
     const ctx = canvas.getContext('2d');
     const contextMenu = document.getElementById('contextMenu');
+    const toggleColorMode = document.getElementById('toggleColorMode');
 
     const HEX_RADIUS = 44;
     const MAP_RADIUS = 6;
     const HEX_COLOR = '#000000';
 
+    let useGrayscale = true;
+
     const style = getComputedStyle(document.documentElement);
-    const terrainTypes = [
-      { name: "Desert", color: style.getPropertyValue('--terrain-desert').trim() },
-      { name: "Swamp", color: style.getPropertyValue('--terrain-swamp').trim() },
-      { name: "Grassland", color: style.getPropertyValue('--terrain-grassland').trim() },
-      { name: "Forest", color: style.getPropertyValue('--terrain-forest').trim() },
-      { name: "River", color: style.getPropertyValue('--terrain-river').trim() },
-      { name: "Ocean", color: style.getPropertyValue('--terrain-ocean').trim() },
-      { name: "Mountain", color: style.getPropertyValue('--terrain-mountain').trim() }
+    const baseTerrainTypes = [
+      { name: "Desert", grayscale: style.getPropertyValue('--terrain-desert').trim(), color: '#fceabb' },
+      { name: "Swamp", grayscale: style.getPropertyValue('--terrain-swamp').trim(), color: '#6b8e23' },
+      { name: "Grassland", grayscale: style.getPropertyValue('--terrain-grassland').trim(), color: '#90ee90' },
+      { name: "Forest", grayscale: style.getPropertyValue('--terrain-forest').trim(), color: '#228b22' },
+      { name: "River", grayscale: style.getPropertyValue('--terrain-river').trim(), color: '#00ced1' },
+      { name: "Ocean", grayscale: style.getPropertyValue('--terrain-ocean').trim(), color: '#4682b4' },
+      { name: "Mountain", grayscale: style.getPropertyValue('--terrain-mountain').trim(), color: '#8b4513' }
     ];
 
     const terrainMap = new Map();
+
+    function getTerrainColor(terrain) {
+      return useGrayscale ? terrain.grayscale : terrain.color;
+    }
 
     function hexToPixel(q, r, size) {
       const x = size * Math.sqrt(3) * (q + r/2);
@@ -210,27 +226,35 @@
     function drawGrid() {
       terrainMap.clear();
       const coords = getHexSpiral(MAP_RADIUS);
-      let previousTerrain = terrainTypes[Math.floor(Math.random() * terrainTypes.length)];
+      let previousTerrain = baseTerrainTypes[Math.floor(Math.random() * baseTerrainTypes.length)];
 
       for (const { q, r } of coords) {
         if (roll2d6is12()) {
           let newTerrain;
           do {
-            newTerrain = terrainTypes[Math.floor(Math.random() * terrainTypes.length)];
+            newTerrain = baseTerrainTypes[Math.floor(Math.random() * baseTerrainTypes.length)];
           } while (newTerrain === previousTerrain);
           previousTerrain = newTerrain;
         }
         terrainMap.set(`${q},${r}`, previousTerrain);
         const [x, y] = hexToPixel(q, r, HEX_RADIUS);
-        drawHex(x + canvas.width / 2, y + canvas.height / 2, HEX_RADIUS, previousTerrain.color, `${q},${r}`, previousTerrain.name);
+        drawHex(x + canvas.width / 2, y + canvas.height / 2, HEX_RADIUS, getTerrainColor(previousTerrain), `${q},${r}`, previousTerrain.name);
       }
     }
 
     function redrawHex(q, r) {
       const terrain = terrainMap.get(`${q},${r}`);
       const [x, y] = hexToPixel(q, r, HEX_RADIUS);
-      drawHex(x + canvas.width / 2, y + canvas.height / 2, HEX_RADIUS, terrain.color, `${q},${r}`, terrain.name);
+      drawHex(x + canvas.width / 2, y + canvas.height / 2, HEX_RADIUS, getTerrainColor(terrain), `${q},${r}`, terrain.name);
     }
+
+    toggleColorMode.addEventListener('click', () => {
+      useGrayscale = !useGrayscale;
+      for (const key of terrainMap.keys()) {
+        const [q, r] = key.split(',').map(Number);
+        redrawHex(q, r);
+      }
+    });
 
     canvas.addEventListener("contextmenu", (e) => {
       e.preventDefault();
@@ -242,10 +266,10 @@
       if (!terrainMap.has(`${q},${r}`)) return;
 
       contextMenu.innerHTML = '';
-      terrainTypes.forEach(t => {
+      baseTerrainTypes.forEach(t => {
         const item = document.createElement('div');
         item.className = 'context-menu-item';
-        item.innerHTML = `<span class="swatch" style="background:${t.color}"></span>${t.name}`;
+        item.innerHTML = `<span class="swatch" style="background:${getTerrainColor(t)}"></span>${t.name}`;
         item.onclick = () => {
           terrainMap.set(`${q},${r}`, t);
           redrawHex(q, r);
