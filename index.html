@@ -93,16 +93,17 @@
 
 <body>
   <div id="buttons">
-    <button id="toggleColorMode">Colour / Grayscale</button>
     <button id="newMapButton">New Map</button>
     <button id="toggleDangerButton">DM / Players</button>
+    <button id="toggleColorMode">Colour / Gray</button>
   </div>
 
   <div class="legend">
     <ul>
       <li><span class="swatch" id="swatch-desert" style="background: var(--terrain-desert);"></span> Desert</li>
       <li><span class="swatch" id="swatch-swamp" style="background: var(--terrain-swamp);"></span> Swamp</li>
-      <li><span class="swatch" id="swatch-grassland" style="background: var(--terrain-grassland);"></span> Grassland</li>
+      <li><span class="swatch" id="swatch-grassland" style="background: var(--terrain-grassland);"></span> Grassland
+      </li>
       <li><span class="swatch" id="swatch-forest" style="background: var(--terrain-forest);"></span> Forest</li>
       <li><span class="swatch" id="swatch-river" style="background: var(--terrain-river);"></span> River</li>
       <li><span class="swatch" id="swatch-ocean" style="background: var(--terrain-ocean);"></span> Ocean</li>
@@ -288,18 +289,24 @@
       return results;
     }
 
+    // ... existing variable declarations ...
+
     function drawGrid() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const previousTerrainMap = new Map(terrainMap); // preserve manual changes
       terrainMap.clear();
       dangerMap.clear();
       poiMap.clear();
       poiListDiv.innerHTML = '';
+
       const coords = getHexSpiral(MAP_RADIUS);
       const seedRef = { value: seed };
       let previousTerrain = seededChoice(seedRef, baseTerrainTypes);
       const poiEntries = [];
 
       for (const { q, r } of coords) {
+        const key = `${q},${r}`;
+
         if (seededRandom(seedRef.value++) < 1 / 36) {
           let newTerrain;
           do {
@@ -308,23 +315,23 @@
           previousTerrain = newTerrain;
         }
 
-        const terrain = previousTerrain;
-        terrainMap.set(`${q},${r}`, terrain);
+        const terrain = previousTerrainMap.get(key) || previousTerrain;
+        terrainMap.set(key, terrain);
 
         const dangerRoll = seededD6(seedRef);
         const dangerSymbol = dangerLevelSymbol(dangerRoll);
-        dangerMap.set(`${q},${r}`, dangerSymbol);
+        dangerMap.set(key, dangerSymbol);
 
         let hasPOI = false;
         if (seededD6(seedRef) === 1) {
           const poiType = poiDescriptions[seededD20(seedRef)];
-          poiMap.set(`${q},${r}`, poiType);
+          poiMap.set(key, poiType);
           poiEntries.push(`<li><strong>Hex ${q},${r}</strong>: ${poiType}</li>`);
           hasPOI = true;
         }
 
         const [x, y] = hexToPixel(q, r, HEX_RADIUS);
-        drawHex(x + canvas.width / 2, y + canvas.height / 2, HEX_RADIUS, getTerrainColor(terrain), `${q},${r}`, terrain.name, dangerSymbol, hasPOI);
+        drawHex(x + canvas.width / 2, y + canvas.height / 2, HEX_RADIUS, getTerrainColor(terrain), key, terrain.name, dangerSymbol, hasPOI);
       }
 
       if (showDanger && poiEntries.length > 0) {
