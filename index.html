@@ -12,14 +12,24 @@
   </style>
 </head>
 <body>
-<canvas id="hexMap" width="1000" height="800"></canvas>
+<p>Per hex</p>
+<ul>
+  <li>Walking: 4 hours</li>
+  <li>Mounted: 2 hours</li>
+  <li>Sailing: 1 hour</li>
+  <li>Arduous terrain: 8 hours</li>
+  <li>Difficult terrain: time x2</li>
+</ul>
+
+
+<canvas id="hexMap" width="1000" height="1000"></canvas>
 
 <script>
   const canvas = document.getElementById('hexMap');
   const ctx = canvas.getContext('2d');
 
-  const HEX_RADIUS = 40;
-  const MAP_RADIUS = 5; // controls overall hexagon size
+  const HEX_RADIUS = 44;
+  const MAP_RADIUS = 6; // controls overall hexagon size
   const HEX_COLOR = '#000000';
   const TEXT_COLOR = '#000000';
 
