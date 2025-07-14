@@ -97,7 +97,7 @@
   <div id="buttons">
     <button id="toggleColorMode">Colour / Grayscale</button>
     <button id="newMapButton">New Map</button>
-    <button id="toggleDangerButton">Toggle Danger</button>
+    <button id="toggleDangerButton">DM / Players</button>
   </div>
 
   <div class="legend">
@@ -116,6 +116,8 @@
       <li>Sailing: 1 hour</li>
       <li>Arduous terrain: 8 hours</li>
       <li>Difficult terrain: time x2</li>
+      <li>&nbsp;</li>
+      <li>Safe, Unsafe, Risky, Deadly</li>
     </ul>
   </div>
 
@@ -158,10 +160,10 @@
     }
 
     function dangerLevelSymbol(roll) {
-      if (roll === 1) return 'S'; // Safe
-      if (roll <= 3) return 'U';  // Unsafe
-      if (roll <= 5) return 'R';  // Risky
-      return 'D'; // Deadly
+      if (roll === 1) return 'S';
+      if (roll <= 3) return 'U';
+      if (roll <= 5) return 'R';
+      return 'D';
     }
 
     const style = getComputedStyle(document.documentElement);
@@ -247,8 +249,7 @@
       ctx.fillText(label, x, y - 8);
 
       ctx.font = '10px sans-serif';
-      let terrainLabel = terrainName.slice(0, 5);
-      ctx.fillText(showDanger ? `${terrainLabel} - ${dangerSymbol}` : terrainLabel, x, y + 8);
+      ctx.fillText(showDanger ? `${terrainName} - ${dangerSymbol}` : terrainName, x, y + 8);
     }
 
     function getHexSpiral(radius) {
