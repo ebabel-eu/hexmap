@@ -125,6 +125,7 @@
   <div id="poiList" style="display: block;"></div>
 
   <script>
+    // --- GET DOM ELEMENTS ---
     const canvas = document.getElementById('hexMap');
     const ctx = canvas.getContext('2d');
     const contextMenu = document.getElementById('contextMenu');
@@ -133,6 +134,7 @@
     const toggleDangerButton = document.getElementById('toggleDangerButton');
     const poiListDiv = document.getElementById('poiList');
 
+    // --- CONSTANTS ---
     const HEX_RADIUS = 44;
     const MAP_RADIUS = 6;
     const HEX_COLOR = '#000000';
@@ -167,6 +169,7 @@
       "Driftfen", "Fennridge", "Oatfield", "Tallowmere", "Crowfen", "Stumpwatch", "Miregrove", "Rustmere",
       "Hag's End", "Oakshade", "Marshrest", "Grimhill", "Barrowfell", "Glowfield", "Wispstead", "Briarbrook"
     ];
+
     const townNames = [
       "Stonequay", "Halberd's Hollow", "Narrowdeep", "Thundertree", "Feymarch", "Crimson Hollow", "Greystone",
       "Ashbridge", "Wyrmgate", "Frostbarrow", "Daggerlark", "Emberdeep", "Saltmere", "Redhall", "Brightward",
@@ -182,6 +185,7 @@
       "Netherstead", "Oakspire", "Silentmere", "Fellharbor", "Coldmoor", "Mirefield", "Dusksend", "Ghostmoor",
       "Bramblewatch", "Witchwater", "Starhaven", "Firegate", "Brightfall", "Swanhold", "Dunmarch", "Gravestone"
     ];
+
     const cityNames = [
       "Velthar", "Caramund", "Ironcrest", "Thalvaren", "Yrnath", "Khalden", "Stormspire", "Maelbrith",
       "Dunvahr", "Sablethorn", "Valthros", "Caer Dhun", "Nymera", "Eldreth", "Gravemarch", "Solgarde",
@@ -199,6 +203,15 @@
     ];
 
     const poiDevelopments = [
+      "Cataclysm",
+      "Cataclysm",
+      "Cataclysm",
+      "Cataclysm",
+      "Cataclysm",
+      "Cataclysm",
+      "Cataclysm",
+      "Cataclysm",
+      "Cataclysm",
       "Cataclysm",
       "Haunted by the ghosts of a lost battalion",
       "Sunk partially into the earth after an earthquake",
@@ -303,8 +316,7 @@
     ];
 
     const cataclysmTypes = [
-      "Volcano", "Fire", "Earthquake", "Hurricane",
-      "Flood", "War", "Plague", "Supernatural disaster"
+      "Volcano", "Fire", "Earthquake", "Storm", "Flood", "War", "Pestilence", "Magical disaster"
     ];
 
     const baseTerrainTypes = [
@@ -317,76 +329,36 @@
       { name: "Mountain", grayscale: '#111111', color: '#ddd3c1' }
     ];
 
+    // --- RANDOM UTILITIES ---
     function seededRandom(seed) {
       let x = Math.sin(seed++) * 10000;
       return x - Math.floor(x);
     }
-
-    function seededChoice(seedRef, choices) {
+    function seededChoice(seedRef, list) {
       const val = seededRandom(seedRef.value);
       seedRef.value++;
-      return choices[Math.floor(val * choices.length)];
+      return list[Math.floor(val * list.length)];
     }
-
     function seededDie(seedRef, sides) {
-      const val = seededRandom(seedRef.value);
-      seedRef.value++;
-      return Math.floor(val * sides) + 1;
+      return Math.floor(seededRandom(seedRef.value++) * sides) + 1;
+    }
+    function randomDie(sides) {
+      return Math.floor(Math.random() * sides) + 1;
     }
 
-    function dangerLevelSymbol(roll) {
-      if (roll === 1) return 'S';
-      if (roll <= 3) return 'U';
-      if (roll <= 5) return 'R';
-      return 'D';
-    }
-
-    function getTerrainColor(terrain) {
-      return useGrayscale ? terrain.grayscale : terrain.color;
-    }
-
-    function updateLegendSwatches() {
-      baseTerrainTypes.forEach(t => {
-        const el = document.getElementById(`swatch-${t.name.toLowerCase()}`);
-        if (el) el.style.background = getTerrainColor(t);
-      });
-    }
-
+    // --- DRAWING ---
     function hexToPixel(q, r, size) {
       const x = size * Math.sqrt(3) * (q + r / 2);
       const y = size * 3 / 2 * r;
       return [x, y];
     }
-
-    function getHexSpiral(radius) {
-      const results = [{ q: 0, r: 0 }];
-      const directions = [
-        { q: 1, r: 0 }, { q: 1, r: -1 }, { q: 0, r: -1 },
-        { q: -1, r: 0 }, { q: -1, r: 1 }, { q: 0, r: 1 }
-      ];
-      for (let k = 1; k <= radius; k++) {
-        let q = directions[4].q * k;
-        let r = directions[4].r * k;
-        for (let side = 0; side < 6; side++) {
-          const dir = directions[side];
-          for (let step = 0; step < k; step++) {
-            results.push({ q, r });
-            q += dir.q;
-            r += dir.r;
-          }
-        }
-      }
-      return results;
-    }
-
     function drawHex(x, y, size, fillColor, label, terrainName, dangerSymbol, hasPOI) {
       ctx.beginPath();
       for (let i = 0; i < 6; i++) {
         const angle = Math.PI / 180 * (60 * i - 30);
         const px = x + size * Math.cos(angle);
         const py = y + size * Math.sin(angle);
-        if (i === 0) ctx.moveTo(px, py);
-        else ctx.lineTo(px, py);
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
       }
       ctx.closePath();
       ctx.fillStyle = fillColor;
@@ -403,16 +375,47 @@
 
       ctx.font = '11px sans-serif';
       ctx.fillText(label, x, y - 10);
-
       ctx.font = '10px sans-serif';
       ctx.fillText(showDanger ? `${terrainName} - ${dangerSymbol}` : terrainName, x, y + 6);
-
       if (showDanger && hasPOI) {
         ctx.font = 'bold 9px sans-serif';
         ctx.fillText("PoI", x, y + 20);
       }
     }
+    function getHexSpiral(radius) {
+      const results = [{ q: 0, r: 0 }];
+      const dirs = [{ q: 1, r: 0 }, { q: 1, r: -1 }, { q: 0, r: -1 }, { q: -1, r: 0 }, { q: -1, r: 1 }, { q: 0, r: 1 }];
+      for (let k = 1; k <= radius; k++) {
+        let q = dirs[4].q * k;
+        let r = dirs[4].r * k;
+        for (let side = 0; side < 6; side++) {
+          const dir = dirs[side];
+          for (let step = 0; step < k; step++) {
+            results.push({ q, r });
+            q += dir.q;
+            r += dir.r;
+          }
+        }
+      }
+      return results;
+    }
+    function getTerrainColor(terrain) {
+      return useGrayscale ? terrain.grayscale : terrain.color;
+    }
+    function updateLegendSwatches() {
+      baseTerrainTypes.forEach(t => {
+        const el = document.getElementById(`swatch-${t.name.toLowerCase()}`);
+        if (el) el.style.background = getTerrainColor(t);
+      });
+    }
 
+    // --- DANGER & DRAWGRID ---
+    function dangerLevelSymbol(roll) {
+      if (roll === 1) return 'S';
+      if (roll <= 3) return 'U';
+      if (roll <= 5) return 'R';
+      return 'D';
+    }
     function drawGrid(drawOnly = false) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       if (!drawOnly) {
@@ -425,8 +428,6 @@
       const coords = getHexSpiral(MAP_RADIUS);
       const seedRef = { value: seed };
       let previousTerrain = seededChoice(seedRef, baseTerrainTypes);
-
-      const poiEntries = [];
 
       coords.forEach(({ q, r }, index) => {
         const hexId = index + 1;
@@ -454,23 +455,16 @@
         }
 
         let hasPOI = poiMap.has(key);
-        if (!drawOnly && seededDie(seedRef, 6) === 1) {
-          let poiType = poiDescriptions[seededDie(seedRef, 20) - 1];
+        if (!drawOnly && randomDie(6) === 1) {
+          let poiType = poiDescriptions[randomDie(poiDescriptions.length) - 1];
+          if (poiType === "Village") poiType += ": " + villageNames[randomDie(villageNames.length) - 1];
+          else if (poiType === "Town") poiType += ": " + townNames[randomDie(townNames.length) - 1];
+          else if (poiType === "City") poiType += ": " + cityNames[randomDie(cityNames.length) - 1];
 
-          if (poiType === "Village") {
-            poiType += ": " + villageNames[seededDie(seedRef, 8) - 1];
-          } else if (poiType === "Town") {
-            poiType += ": " + townNames[seededDie(seedRef, 8) - 1];
-          } else if (poiType === "City") {
-            poiType += ": " + cityNames[seededDie(seedRef, 8) - 1];
-          }
-
-          const developmentRoll = seededDie(seedRef, 20);
-          let development = poiDevelopments[developmentRoll - 1];
-
+          let development = poiDevelopments[randomDie(poiDevelopments.length) - 1];
           if (development === "Cataclysm") {
-            const cataclysm = cataclysmTypes[seededDie(seedRef, 8) - 1];
-            development += `: ${cataclysm}`;
+            const cataclysm = cataclysmTypes[randomDie(cataclysmTypes.length) - 1];
+            development = `Cataclysm: ${cataclysm}`;
           }
 
           const fullPOI = `${poiType} (${development})`;
@@ -495,30 +489,16 @@
       }
     }
 
-    function redrawHex(q, r) {
-      const key = `${q},${r}`;
-      const terrain = terrainMap.get(key);
-      const danger = dangerMap.get(key);
-      const hasPOI = poiMap.has(key);
-      const hexId = hexNumberMap.get(key);
-      const [x, y] = hexToPixel(q, r, HEX_RADIUS);
-      drawHex(x + canvas.width / 2, y + canvas.height / 2, HEX_RADIUS, getTerrainColor(terrain), hexId, terrain.name, danger, hasPOI);
-    }
-
+    // --- EVENT HANDLERS ---
     toggleColorMode.addEventListener('click', () => {
       useGrayscale = !useGrayscale;
       updateLegendSwatches();
-      for (const key of terrainMap.keys()) {
-        const [q, r] = key.split(',').map(Number);
-        redrawHex(q, r);
-      }
+      drawGrid(true);
     });
-
     toggleDangerButton.addEventListener('click', () => {
       showDanger = !showDanger;
       drawGrid(true);
     });
-
     newMapButton.addEventListener('click', () => {
       seed = Math.floor(Math.random() * 99999);
       terrainMap.clear();
@@ -555,6 +535,18 @@
       contextMenu.style.display = 'block';
     });
 
+    window.addEventListener('click', () => {
+      contextMenu.style.display = 'none';
+    });
+    function redrawHex(q, r) {
+      const key = `${q},${r}`;
+      const terrain = terrainMap.get(key);
+      const danger = dangerMap.get(key);
+      const hasPOI = poiMap.has(key);
+      const hexId = hexNumberMap.get(key);
+      const [x, y] = hexToPixel(q, r, HEX_RADIUS);
+      drawHex(x + canvas.width / 2, y + canvas.height / 2, HEX_RADIUS, getTerrainColor(terrain), hexId, terrain.name, danger, hasPOI);
+    }
     function hexRound(qf, rf) {
       const sf = -qf - rf;
       let q = Math.round(qf);
@@ -568,12 +560,10 @@
       return { q, r };
     }
 
-    window.addEventListener('click', () => {
-      contextMenu.style.display = 'none';
-    });
-
+    // --- INITIAL DRAW ---
     drawGrid();
     updateLegendSwatches();
+
   </script>
 
 </body>
