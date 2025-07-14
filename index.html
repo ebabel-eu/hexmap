@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <title>Hex Map Generator</title>
@@ -78,7 +79,8 @@
       background-color: #eee;
     }
 
-    #toggleColorMode, #newMapButton {
+    #toggleColorMode,
+    #newMapButton {
       position: absolute;
       top: 10px;
       z-index: 2;
@@ -93,12 +95,15 @@
     }
 
     @media print {
-      #toggleColorMode, #newMapButton {
+
+      #toggleColorMode,
+      #newMapButton {
         display: none;
       }
     }
   </style>
 </head>
+
 <body>
 
   <button id="toggleColorMode">Colour / Grayscale</button>
@@ -108,7 +113,8 @@
     <ul>
       <li><span class="swatch" id="swatch-desert" style="background: var(--terrain-desert);"></span> Desert</li>
       <li><span class="swatch" id="swatch-swamp" style="background: var(--terrain-swamp);"></span> Swamp</li>
-      <li><span class="swatch" id="swatch-grassland" style="background: var(--terrain-grassland);"></span> Grassland</li>
+      <li><span class="swatch" id="swatch-grassland" style="background: var(--terrain-grassland);"></span> Grassland
+      </li>
       <li><span class="swatch" id="swatch-forest" style="background: var(--terrain-forest);"></span> Forest</li>
       <li><span class="swatch" id="swatch-river" style="background: var(--terrain-river);"></span> River</li>
       <li><span class="swatch" id="swatch-ocean" style="background: var(--terrain-ocean);"></span> Ocean</li>
@@ -155,12 +161,12 @@
     const style = getComputedStyle(document.documentElement);
     const baseTerrainTypes = [
       { name: "Desert", grayscale: style.getPropertyValue('--terrain-desert').trim(), color: '#fceabb' },
-      { name: "Swamp", grayscale: style.getPropertyValue('--terrain-swamp').trim(), color: '#6b8e23' },
-      { name: "Grassland", grayscale: style.getPropertyValue('--terrain-grassland').trim(), color: '#90ee90' },
-      { name: "Forest", grayscale: style.getPropertyValue('--terrain-forest').trim(), color: '#228b22' },
-      { name: "River", grayscale: style.getPropertyValue('--terrain-river').trim(), color: '#00ced1' },
-      { name: "Ocean", grayscale: style.getPropertyValue('--terrain-ocean').trim(), color: '#4682b4' },
-      { name: "Mountain", grayscale: style.getPropertyValue('--terrain-mountain').trim(), color: '#8b4513' }
+      { name: "Swamp", grayscale: style.getPropertyValue('--terrain-swamp').trim(), color: '#c6e2c1' },
+      { name: "Grassland", grayscale: style.getPropertyValue('--terrain-grassland').trim(), color: '#d5f5c9' },
+      { name: "Forest", grayscale: style.getPropertyValue('--terrain-forest').trim(), color: '#b0d9af' },
+      { name: "River", grayscale: style.getPropertyValue('--terrain-river').trim(), color: '#ccefff' },
+      { name: "Ocean", grayscale: style.getPropertyValue('--terrain-ocean').trim(), color: '#b2d4ee' },
+      { name: "Mountain", grayscale: style.getPropertyValue('--terrain-mountain').trim(), color: '#ddd3c1' }
     ];
 
     function getTerrainColor(terrain) {
@@ -182,8 +188,8 @@
 
     function pixelToHex(x, y) {
       const size = HEX_RADIUS;
-      const q = ((x - canvas.width / 2) * Math.sqrt(3)/3 - (y - canvas.height / 2) / 3) / size;
-      const r = ((y - canvas.height / 2) * 2/3) / size;
+      const q = ((x - canvas.width / 2) * Math.sqrt(3) / 3 - (y - canvas.height / 2) / 3) / size;
+      const r = ((y - canvas.height / 2) * 2 / 3) / size;
       return hexRound(q, r);
     }
 
@@ -219,13 +225,23 @@
       ctx.lineWidth = 2;
       ctx.stroke();
 
-      const blackTextTerrains = ["Desert", "Swamp"];
-      const textColor = blackTextTerrains.includes(terrainName) ? '#000000' : '#ffffff';
+      let textColor;
+      if (!useGrayscale) {
+        textColor = '#000000'; // Always black in color mode
+      } else {
+        const blackTextTerrains = ["Desert", "Swamp"];
+        textColor = blackTextTerrains.includes(terrainName) ? '#000000' : '#ffffff';
+      }
+
       ctx.fillStyle = textColor;
-      ctx.font = '12px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(label, x, y);
+
+      ctx.font = '11px sans-serif';
+      ctx.fillText(label, x, y - 6);  // coordinates
+
+      ctx.font = '10px sans-serif';
+      ctx.fillText(terrainName, x, y + 8);  // terrain name
     }
 
     function getHexSpiral(radius) {
@@ -327,4 +343,5 @@
     updateLegendSwatches();
   </script>
 </body>
+
 </html>
