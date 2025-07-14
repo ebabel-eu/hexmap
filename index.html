@@ -78,7 +78,7 @@
       background-color: #eee;
     }
 
-    #toggleColorMode, #newMapBtn {
+    #toggleColorMode, #newMapButton {
       position: absolute;
       top: 10px;
       z-index: 2;
@@ -88,12 +88,12 @@
       left: 10px;
     }
 
-    #newMapBtn {
-      left: 150px;
+    #newMapButton {
+      left: 160px;
     }
 
     @media print {
-      #toggleColorMode, #newMapBtn {
+      #toggleColorMode, #newMapButton {
         display: none;
       }
     }
@@ -102,17 +102,17 @@
 <body>
 
   <button id="toggleColorMode">Colour / Grayscale</button>
-  <button id="newMapBtn">New Map</button>
+  <button id="newMapButton">New Map</button>
 
   <div class="legend">
     <ul>
-      <li><span class="swatch" id="swatch-desert"></span> Desert</li>
-      <li><span class="swatch" id="swatch-swamp"></span> Swamp</li>
-      <li><span class="swatch" id="swatch-grassland"></span> Grassland</li>
-      <li><span class="swatch" id="swatch-forest"></span> Forest</li>
-      <li><span class="swatch" id="swatch-river"></span> River</li>
-      <li><span class="swatch" id="swatch-ocean"></span> Ocean</li>
-      <li><span class="swatch" id="swatch-mountain"></span> Mountain</li>
+      <li><span class="swatch" id="swatch-desert" style="background: var(--terrain-desert);"></span> Desert</li>
+      <li><span class="swatch" id="swatch-swamp" style="background: var(--terrain-swamp);"></span> Swamp</li>
+      <li><span class="swatch" id="swatch-grassland" style="background: var(--terrain-grassland);"></span> Grassland</li>
+      <li><span class="swatch" id="swatch-forest" style="background: var(--terrain-forest);"></span> Forest</li>
+      <li><span class="swatch" id="swatch-river" style="background: var(--terrain-river);"></span> River</li>
+      <li><span class="swatch" id="swatch-ocean" style="background: var(--terrain-ocean);"></span> Ocean</li>
+      <li><span class="swatch" id="swatch-mountain" style="background: var(--terrain-mountain);"></span> Mountain</li>
     </ul>
     <ul>
       <li>Walking: 4 hours</li>
@@ -131,13 +131,26 @@
     const ctx = canvas.getContext('2d');
     const contextMenu = document.getElementById('contextMenu');
     const toggleColorMode = document.getElementById('toggleColorMode');
-    const newMapBtn = document.getElementById('newMapBtn');
+    const newMapButton = document.getElementById('newMapButton');
 
     const HEX_RADIUS = 44;
     const MAP_RADIUS = 6;
     const HEX_COLOR = '#000000';
 
     let useGrayscale = false;
+    let seed = Math.floor(Math.random() * 99999);
+    let terrainMap = new Map();
+
+    function seededRandom(seed) {
+      let x = Math.sin(seed++) * 10000;
+      return x - Math.floor(x);
+    }
+
+    function seededChoice(seedRef, choices) {
+      const val = seededRandom(seedRef.value);
+      seedRef.value++;
+      return choices[Math.floor(val * choices.length)];
+    }
 
     const style = getComputedStyle(document.documentElement);
     const baseTerrainTypes = [
@@ -149,8 +162,6 @@
       { name: "Ocean", grayscale: style.getPropertyValue('--terrain-ocean').trim(), color: '#4682b4' },
       { name: "Mountain", grayscale: style.getPropertyValue('--terrain-mountain').trim(), color: '#8b4513' }
     ];
-
-    const terrainMap = new Map();
 
     function getTerrainColor(terrain) {
       return useGrayscale ? terrain.grayscale : terrain.color;
@@ -217,10 +228,6 @@
       ctx.fillText(label, x, y);
     }
 
-    function roll2d6is12() {
-      return Math.floor(Math.random() * 36) === 0;
-    }
-
     function getHexSpiral(radius) {
       const results = [{ q: 0, r: 0 }];
       const directions = [
@@ -241,7 +248,6 @@
           }
         }
       }
-
       return results;
     }
 
@@ -249,13 +255,14 @@
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       terrainMap.clear();
       const coords = getHexSpiral(MAP_RADIUS);
-      let previousTerrain = baseTerrainTypes[Math.floor(Math.random() * baseTerrainTypes.length)];
+      const seedRef = { value: seed };
+      let previousTerrain = seededChoice(seedRef, baseTerrainTypes);
 
       for (const { q, r } of coords) {
-        if (roll2d6is12()) {
+        if (seededRandom(seedRef.value++) < 1 / 36) {
           let newTerrain;
           do {
-            newTerrain = baseTerrainTypes[Math.floor(Math.random() * baseTerrainTypes.length)];
+            newTerrain = seededChoice(seedRef, baseTerrainTypes);
           } while (newTerrain === previousTerrain);
           previousTerrain = newTerrain;
         }
@@ -280,9 +287,9 @@
       updateLegendSwatches();
     });
 
-    newMapBtn.addEventListener('click', () => {
+    newMapButton.addEventListener('click', () => {
+      seed = Math.floor(Math.random() * 99999);
       drawGrid();
-      updateLegendSwatches();
     });
 
     canvas.addEventListener("contextmenu", (e) => {
