@@ -5,13 +5,13 @@
   <title>Hex Map Generator</title>
   <style>
     :root {
-      --terrain-desert: #f4e2b9;
-      --terrain-swamp: #9fc88f;
-      --terrain-grassland: #c9e27f;
-      --terrain-forest: #69a74e;
-      --terrain-river: #a3d1e6;
-      --terrain-ocean: #3c79b3;
-      --terrain-mountain: #999999;
+      --terrain-desert: #dddddd;
+      --terrain-swamp: #bbbbbb;
+      --terrain-grassland: #999999;
+      --terrain-forest: #777777;
+      --terrain-river: #555555;
+      --terrain-ocean: #333333;
+      --terrain-mountain: #111111;
     }
 
     body {
@@ -83,11 +83,11 @@
 
   <div class="legend">
     <ul>
-      <li><span class="swatch" style="background: var(--terrain-desert);"></span> Desert or Arctic</li>
+      <li><span class="swatch" style="background: var(--terrain-desert);"></span> Desert</li>
       <li><span class="swatch" style="background: var(--terrain-swamp);"></span> Swamp</li>
       <li><span class="swatch" style="background: var(--terrain-grassland);"></span> Grassland</li>
-      <li><span class="swatch" style="background: var(--terrain-forest);"></span> Forest or Jungle</li>
-      <li><span class="swatch" style="background: var(--terrain-river);"></span> River or Coast</li>
+      <li><span class="swatch" style="background: var(--terrain-forest);"></span> Forest</li>
+      <li><span class="swatch" style="background: var(--terrain-river);"></span> River</li>
       <li><span class="swatch" style="background: var(--terrain-ocean);"></span> Ocean</li>
       <li><span class="swatch" style="background: var(--terrain-mountain);"></span> Mountain</li>
     </ul>
@@ -111,15 +111,14 @@
     const HEX_RADIUS = 44;
     const MAP_RADIUS = 6;
     const HEX_COLOR = '#000000';
-    const TEXT_COLOR = '#000000';
 
     const style = getComputedStyle(document.documentElement);
     const terrainTypes = [
-      { name: "Desert or Arctic", color: style.getPropertyValue('--terrain-desert').trim() },
+      { name: "Desert", color: style.getPropertyValue('--terrain-desert').trim() },
       { name: "Swamp", color: style.getPropertyValue('--terrain-swamp').trim() },
       { name: "Grassland", color: style.getPropertyValue('--terrain-grassland').trim() },
-      { name: "Forest or Jungle", color: style.getPropertyValue('--terrain-forest').trim() },
-      { name: "River or Coast", color: style.getPropertyValue('--terrain-river').trim() },
+      { name: "Forest", color: style.getPropertyValue('--terrain-forest').trim() },
+      { name: "River", color: style.getPropertyValue('--terrain-river').trim() },
       { name: "Ocean", color: style.getPropertyValue('--terrain-ocean').trim() },
       { name: "Mountain", color: style.getPropertyValue('--terrain-mountain').trim() }
     ];
@@ -127,15 +126,15 @@
     const terrainMap = new Map();
 
     function hexToPixel(q, r, size) {
-      const x = size * (3 / 2 * q);
-      const y = size * (Math.sqrt(3) * (r + q / 2));
+      const x = size * Math.sqrt(3) * (q + r/2);
+      const y = size * 3/2 * r;
       return [x, y];
     }
 
     function pixelToHex(x, y) {
       const size = HEX_RADIUS;
-      const q = (2/3 * (x - canvas.width / 2)) / size;
-      const r = (-1/3 * (x - canvas.width / 2) + Math.sqrt(3)/3 * (y - canvas.height / 2)) / size;
+      const q = ((x - canvas.width / 2) * Math.sqrt(3)/3 - (y - canvas.height / 2) / 3) / size;
+      const r = ((y - canvas.height / 2) * 2/3) / size;
       return hexRound(q, r);
     }
 
@@ -155,10 +154,10 @@
       return { q, r };
     }
 
-    function drawHex(x, y, size, fillColor, label) {
+    function drawHex(x, y, size, fillColor, label, terrainName) {
       ctx.beginPath();
       for (let i = 0; i < 6; i++) {
-        const angle = Math.PI / 180 * (60 * i);
+        const angle = Math.PI / 180 * (60 * i - 30);
         const px = x + size * Math.cos(angle);
         const py = y + size * Math.sin(angle);
         if (i === 0) ctx.moveTo(px, py);
@@ -171,7 +170,9 @@
       ctx.lineWidth = 2;
       ctx.stroke();
 
-      ctx.fillStyle = TEXT_COLOR;
+      const blackTextTerrains = ["Desert", "Swamp"];
+      const textColor = blackTextTerrains.includes(terrainName) ? '#000000' : '#ffffff';
+      ctx.fillStyle = textColor;
       ctx.font = '12px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -185,8 +186,8 @@
     function getHexSpiral(radius) {
       const results = [{ q: 0, r: 0 }];
       const directions = [
-        { q: 1, r: 0 }, { q: 0, r: 1 }, { q: -1, r: 1 },
-        { q: -1, r: 0 }, { q: 0, r: -1 }, { q: 1, r: -1 }
+        { q: 1, r: 0 }, { q: 1, r: -1 }, { q: 0, r: -1 },
+        { q: -1, r: 0 }, { q: -1, r: 1 }, { q: 0, r: 1 }
       ];
 
       for (let k = 1; k <= radius; k++) {
@@ -221,14 +222,14 @@
         }
         terrainMap.set(`${q},${r}`, previousTerrain);
         const [x, y] = hexToPixel(q, r, HEX_RADIUS);
-        drawHex(x + canvas.width / 2, y + canvas.height / 2, HEX_RADIUS, previousTerrain.color, `${q},${r}`);
+        drawHex(x + canvas.width / 2, y + canvas.height / 2, HEX_RADIUS, previousTerrain.color, `${q},${r}`, previousTerrain.name);
       }
     }
 
     function redrawHex(q, r) {
       const terrain = terrainMap.get(`${q},${r}`);
       const [x, y] = hexToPixel(q, r, HEX_RADIUS);
-      drawHex(x + canvas.width / 2, y + canvas.height / 2, HEX_RADIUS, terrain.color, `${q},${r}`);
+      drawHex(x + canvas.width / 2, y + canvas.height / 2, HEX_RADIUS, terrain.color, `${q},${r}`, terrain.name);
     }
 
     canvas.addEventListener("contextmenu", (e) => {
