@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Hex Map Generator</title>
   <style>
     :root {
@@ -122,7 +122,6 @@
 
   <canvas id="hexMap" width="1000" height="1000"></canvas>
   <div id="contextMenu" class="context-menu"></div>
-
   <div id="poiList" style="display: block;"></div>
 
   <script>
@@ -145,6 +144,7 @@
     let terrainMap = new Map();
     let dangerMap = new Map();
     let poiMap = new Map();
+    let hexNumberMap = new Map();
 
     const poiDescriptions = [
       "Small tower", "Fortified keep", "Natural landmark", "Natural landmark", "Temple", "Barrow mounds",
@@ -209,27 +209,25 @@
       return [x, y];
     }
 
-    function pixelToHex(x, y) {
-      const size = HEX_RADIUS;
-      const q = ((x - canvas.width / 2) * Math.sqrt(3) / 3 - (y - canvas.height / 2) / 3) / size;
-      const r = ((y - canvas.height / 2) * 2 / 3) / size;
-      return hexRound(q, r);
-    }
-
-    function hexRound(qf, rf) {
-      const sf = -qf - rf;
-      let q = Math.round(qf);
-      let r = Math.round(rf);
-      let s = Math.round(sf);
-
-      const dq = Math.abs(q - qf);
-      const dr = Math.abs(r - rf);
-      const ds = Math.abs(s - sf);
-
-      if (dq > dr && dq > ds) q = -r - s;
-      else if (dr > ds) r = -q - s;
-
-      return { q, r };
+    function getHexSpiral(radius) {
+      const results = [{ q: 0, r: 0 }];
+      const directions = [
+        { q: 1, r: 0 }, { q: 1, r: -1 }, { q: 0, r: -1 },
+        { q: -1, r: 0 }, { q: -1, r: 1 }, { q: 0, r: 1 }
+      ];
+      for (let k = 1; k <= radius; k++) {
+        let q = directions[4].q * k;
+        let r = directions[4].r * k;
+        for (let side = 0; side < 6; side++) {
+          const dir = directions[side];
+          for (let step = 0; step < k; step++) {
+            results.push({ q, r });
+            q += dir.q;
+            r += dir.r;
+          }
+        }
+      }
+      return results;
     }
 
     function drawHex(x, y, size, fillColor, label, terrainName, dangerSymbol, hasPOI) {
@@ -266,76 +264,64 @@
       }
     }
 
-    function getHexSpiral(radius) {
-      const results = [{ q: 0, r: 0 }];
-      const directions = [
-        { q: 1, r: 0 }, { q: 1, r: -1 }, { q: 0, r: -1 },
-        { q: -1, r: 0 }, { q: -1, r: 1 }, { q: 0, r: 1 }
-      ];
-
-      for (let k = 1; k <= radius; k++) {
-        let q = directions[4].q * k;
-        let r = directions[4].r * k;
-
-        for (let side = 0; side < 6; side++) {
-          const dir = directions[side];
-          for (let step = 0; step < k; step++) {
-            results.push({ q, r });
-            q += dir.q;
-            r += dir.r;
-          }
-        }
-      }
-      return results;
-    }
-
-    // ... existing variable declarations ...
-
-    function drawGrid() {
+    function drawGrid(drawOnly = false) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const previousTerrainMap = new Map(terrainMap); // preserve manual changes
-      terrainMap.clear();
-      dangerMap.clear();
-      poiMap.clear();
-      poiListDiv.innerHTML = '';
+      if (!drawOnly) {
+        terrainMap.clear();
+        dangerMap.clear();
+        poiMap.clear();
+        hexNumberMap.clear();
+        poiListDiv.innerHTML = '';
+      }
 
       const coords = getHexSpiral(MAP_RADIUS);
       const seedRef = { value: seed };
       let previousTerrain = seededChoice(seedRef, baseTerrainTypes);
       const poiEntries = [];
 
-      for (const { q, r } of coords) {
+      coords.forEach(({ q, r }, index) => {
+        const hexId = index + 1;
         const key = `${q},${r}`;
+        hexNumberMap.set(key, hexId);
 
-        if (seededRandom(seedRef.value++) < 1 / 36) {
-          let newTerrain;
-          do {
-            newTerrain = seededChoice(seedRef, baseTerrainTypes);
-          } while (newTerrain === previousTerrain);
-          previousTerrain = newTerrain;
+        let terrain = terrainMap.get(key);
+        if (!drawOnly || !terrain) {
+          if (seededRandom(seedRef.value++) < 1 / 36) {
+            let newTerrain;
+            do {
+              newTerrain = seededChoice(seedRef, baseTerrainTypes);
+            } while (newTerrain === previousTerrain);
+            previousTerrain = newTerrain;
+          }
+          terrain = previousTerrain;
+          terrainMap.set(key, terrain);
         }
 
-        const terrain = previousTerrainMap.get(key) || previousTerrain;
-        terrainMap.set(key, terrain);
+        let danger = dangerMap.get(key);
+        if (!drawOnly || !danger) {
+          const dangerRoll = seededD6(seedRef);
+          danger = dangerLevelSymbol(dangerRoll);
+          dangerMap.set(key, danger);
+        }
 
-        const dangerRoll = seededD6(seedRef);
-        const dangerSymbol = dangerLevelSymbol(dangerRoll);
-        dangerMap.set(key, dangerSymbol);
-
-        let hasPOI = false;
-        if (seededD6(seedRef) === 1) {
+        let hasPOI = poiMap.has(key);
+        if (!drawOnly && seededD6(seedRef) === 1) {
           const poiType = poiDescriptions[seededD20(seedRef)];
           poiMap.set(key, poiType);
-          poiEntries.push(`<li><strong>Hex ${q},${r}</strong>: ${poiType}</li>`);
+          poiEntries.push(`<li><strong>${hexId}</strong>: ${poiType}</li>`);
           hasPOI = true;
         }
 
         const [x, y] = hexToPixel(q, r, HEX_RADIUS);
-        drawHex(x + canvas.width / 2, y + canvas.height / 2, HEX_RADIUS, getTerrainColor(terrain), key, terrain.name, dangerSymbol, hasPOI);
-      }
+        drawHex(x + canvas.width / 2, y + canvas.height / 2, HEX_RADIUS, getTerrainColor(terrain), hexId, terrain.name, danger, hasPOI);
+      });
 
-      if (showDanger && poiEntries.length > 0) {
-        poiListDiv.innerHTML = `<h3>Points of Interest (DM only)</h3><ul>${poiEntries.join('')}</ul>`;
+      if (showDanger && poiMap.size > 0) {
+        const listItems = [...poiMap.entries()].map(([key, val]) => {
+          const id = hexNumberMap.get(key);
+          return `<li><strong>${id}</strong>: ${val}</li>`;
+        });
+        poiListDiv.innerHTML = `<h3>Points of Interest (DM only)</h3><ul>${listItems.join('')}</ul>`;
         poiListDiv.style.display = 'block';
       } else {
         poiListDiv.innerHTML = '';
@@ -344,11 +330,13 @@
     }
 
     function redrawHex(q, r) {
-      const terrain = terrainMap.get(`${q},${r}`);
-      const danger = dangerMap.get(`${q},${r}`);
-      const hasPOI = poiMap.has(`${q},${r}`);
+      const key = `${q},${r}`;
+      const terrain = terrainMap.get(key);
+      const danger = dangerMap.get(key);
+      const hasPOI = poiMap.has(key);
+      const hexId = hexNumberMap.get(key);
       const [x, y] = hexToPixel(q, r, HEX_RADIUS);
-      drawHex(x + canvas.width / 2, y + canvas.height / 2, HEX_RADIUS, getTerrainColor(terrain), `${q},${r}`, terrain.name, danger, hasPOI);
+      drawHex(x + canvas.width / 2, y + canvas.height / 2, HEX_RADIUS, getTerrainColor(terrain), hexId, terrain.name, danger, hasPOI);
     }
 
     toggleColorMode.addEventListener('click', () => {
@@ -362,12 +350,12 @@
 
     toggleDangerButton.addEventListener('click', () => {
       showDanger = !showDanger;
-      drawGrid(); // ✅ Redraw full grid and toggle #poiList visibility
+      drawGrid(true);
     });
 
     newMapButton.addEventListener('click', () => {
       seed = Math.floor(Math.random() * 99999);
-      drawGrid();
+      drawGrid(false);
     });
 
     canvas.addEventListener("contextmenu", (e) => {
@@ -375,9 +363,12 @@
       const rect = canvas.getBoundingClientRect();
       const mouseX = e.clientX - rect.left;
       const mouseY = e.clientY - rect.top;
-      const { q, r } = pixelToHex(mouseX, mouseY);
-
-      if (!terrainMap.has(`${q},${r}`)) return;
+      const size = HEX_RADIUS;
+      const q = ((mouseX - canvas.width / 2) * Math.sqrt(3) / 3 - (mouseY - canvas.height / 2) / 3) / size;
+      const r = ((mouseY - canvas.height / 2) * 2 / 3) / size;
+      const rounded = hexRound(q, r);
+      const key = `${rounded.q},${rounded.r}`;
+      if (!terrainMap.has(key)) return;
 
       contextMenu.innerHTML = '';
       baseTerrainTypes.forEach(t => {
@@ -385,8 +376,8 @@
         item.className = 'context-menu-item';
         item.innerHTML = `<span class="swatch" style="background:${getTerrainColor(t)}"></span>${t.name}`;
         item.onclick = () => {
-          terrainMap.set(`${q},${r}`, t);
-          redrawHex(q, r);
+          terrainMap.set(key, t);
+          redrawHex(rounded.q, rounded.r);
           contextMenu.style.display = 'none';
         };
         contextMenu.appendChild(item);
@@ -396,6 +387,19 @@
       contextMenu.style.top = `${e.pageY}px`;
       contextMenu.style.display = 'block';
     });
+
+    function hexRound(qf, rf) {
+      const sf = -qf - rf;
+      let q = Math.round(qf);
+      let r = Math.round(rf);
+      let s = Math.round(sf);
+      const dq = Math.abs(q - qf);
+      const dr = Math.abs(r - rf);
+      const ds = Math.abs(s - sf);
+      if (dq > dr && dq > ds) q = -r - s;
+      else if (dr > ds) r = -q - s;
+      return { q, r };
+    }
 
     window.addEventListener('click', () => {
       contextMenu.style.display = 'none';
