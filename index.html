@@ -4,23 +4,55 @@
   <meta charset="UTF-8">
   <title>Hex Map Generator</title>
   <style>
+    body {
+      font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+      font-size: 12px;
+    }
+
     canvas {
       background-color: #ffffff; /* Changed to white */
       display: block;
       margin: auto;
     }
+
+    .legend {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      display: flex;
+      gap: 20px;
+      background: white;
+      padding: 5px 10px;
+      border: 1px solid #ccc;
+    }
+    .legend ul {
+      padding-left: 0;
+      margin: 0;
+    }
+    .legend ul li {
+      list-style: none;
+    }
   </style>
 </head>
 <body>
-<p>Per hex</p>
-<ul>
-  <li>Walking: 4 hours</li>
-  <li>Mounted: 2 hours</li>
-  <li>Sailing: 1 hour</li>
-  <li>Arduous terrain: 8 hours</li>
-  <li>Difficult terrain: time x2</li>
-</ul>
-
+  <div class="legend">
+    <ul>
+      <li>Desert or Arctic</li>
+      <li>Swamp</li>
+      <li>Grassland</li>
+      <li>Forest or Jungle</li>
+      <li>River or Coast</li>
+      <li>Ocean</li>
+      <li>Mountain</li>
+    </ul>
+    <ul>
+      <li>Walking: 4 hours</li>
+      <li>Mounted: 2 hours</li>
+      <li>Sailing: 1 hour</li>
+      <li>Arduous terrain: 8 hours</li>
+      <li>Difficult terrain: time x2</li>
+    </ul>
+  </div>
 
 <canvas id="hexMap" width="1000" height="1000"></canvas>
 
