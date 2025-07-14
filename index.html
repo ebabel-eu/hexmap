@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Hex Map Generator</title>
+  <style>
+    canvas {
+      background-color: #1e1e1e;
+      display: block;
+      margin: auto;
+    }
+  </style>
+</head>
+<body>
+<canvas id="hexMap" width="1000" height="800"></canvas>
+
+<script>
+  const canvas = document.getElementById('hexMap');
+  const ctx = canvas.getContext('2d');
+
+  const HEX_RADIUS = 40;
+  const GRID_WIDTH = 10;
+  const GRID_HEIGHT = 10;
+  const HEX_COLOR = '#cce';
+  const TEXT_COLOR = '#000';
+
+  function hexToPixel(q, r, size) {
+    const x = size * (3 / 2 * q);
+    const y = size * (Math.sqrt(3) * (r + q / 2));
+    return [x, y];
+  }
+
+  function drawHex(x, y, size, label) {
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const angle = Math.PI / 180 * (60 * i);
+      const px = x + size * Math.cos(angle);
+      const py = y + size * Math.sin(angle);
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = HEX_COLOR;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.fillStyle = TEXT_COLOR;
+    ctx.font = '12px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, x, y);
+  }
+
+  function drawGrid() {
+    for (let r = 0; r < GRID_HEIGHT; r++) {
+      for (let q = 0; q < GRID_WIDTH; q++) {
+        const [x, y] = hexToPixel(q, r, HEX_RADIUS);
+        drawHex(x + 100, y + 100, HEX_RADIUS, `${q},${r}`);
+      }
+    }
+  }
+
+  drawGrid();
+</script>
+</body>
+</html>
