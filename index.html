@@ -79,25 +79,14 @@
       background-color: #eee;
     }
 
-    #toggleColorMode,
-    #newMapButton {
+    #buttons {
       position: absolute;
       top: 10px;
       z-index: 2;
     }
 
-    #toggleColorMode {
-      left: 10px;
-    }
-
-    #newMapButton {
-      left: 160px;
-    }
-
     @media print {
-
-      #toggleColorMode,
-      #newMapButton {
+      #buttons {
         display: none;
       }
     }
@@ -105,16 +94,17 @@
 </head>
 
 <body>
-
-  <button id="toggleColorMode">Colour / Grayscale</button>
-  <button id="newMapButton">New Map</button>
+  <div id="buttons">
+    <button id="toggleColorMode">Colour / Grayscale</button>
+    <button id="newMapButton">New Map</button>
+    <button id="toggleDangerButton">Toggle Danger</button>
+  </div>
 
   <div class="legend">
     <ul>
       <li><span class="swatch" id="swatch-desert" style="background: var(--terrain-desert);"></span> Desert</li>
       <li><span class="swatch" id="swatch-swamp" style="background: var(--terrain-swamp);"></span> Swamp</li>
-      <li><span class="swatch" id="swatch-grassland" style="background: var(--terrain-grassland);"></span> Grassland
-      </li>
+      <li><span class="swatch" id="swatch-grassland" style="background: var(--terrain-grassland);"></span> Grassland</li>
       <li><span class="swatch" id="swatch-forest" style="background: var(--terrain-forest);"></span> Forest</li>
       <li><span class="swatch" id="swatch-river" style="background: var(--terrain-river);"></span> River</li>
       <li><span class="swatch" id="swatch-ocean" style="background: var(--terrain-ocean);"></span> Ocean</li>
@@ -138,14 +128,17 @@
     const contextMenu = document.getElementById('contextMenu');
     const toggleColorMode = document.getElementById('toggleColorMode');
     const newMapButton = document.getElementById('newMapButton');
+    const toggleDangerButton = document.getElementById('toggleDangerButton');
 
     const HEX_RADIUS = 44;
     const MAP_RADIUS = 6;
     const HEX_COLOR = '#000000';
 
     let useGrayscale = false;
+    let showDanger = true;
     let seed = Math.floor(Math.random() * 99999);
     let terrainMap = new Map();
+    let dangerMap = new Map();
 
     function seededRandom(seed) {
       let x = Math.sin(seed++) * 10000;
@@ -156,6 +149,19 @@
       const val = seededRandom(seedRef.value);
       seedRef.value++;
       return choices[Math.floor(val * choices.length)];
+    }
+
+    function seededD6(seedRef) {
+      const val = seededRandom(seedRef.value);
+      seedRef.value++;
+      return Math.floor(val * 6) + 1;
+    }
+
+    function dangerLevelSymbol(roll) {
+      if (roll === 1) return 'S'; // Safe
+      if (roll <= 3) return 'U';  // Unsafe
+      if (roll <= 5) return 'R';  // Risky
+      return 'D'; // Deadly
     }
 
     const style = getComputedStyle(document.documentElement);
@@ -209,7 +215,7 @@
       return { q, r };
     }
 
-    function drawHex(x, y, size, fillColor, label, terrainName) {
+    function drawHex(x, y, size, fillColor, label, terrainName, dangerSymbol) {
       ctx.beginPath();
       for (let i = 0; i < 6; i++) {
         const angle = Math.PI / 180 * (60 * i - 30);
@@ -227,7 +233,7 @@
 
       let textColor;
       if (!useGrayscale) {
-        textColor = '#000000'; // Always black in color mode
+        textColor = '#000000';
       } else {
         const blackTextTerrains = ["Desert", "Swamp"];
         textColor = blackTextTerrains.includes(terrainName) ? '#000000' : '#ffffff';
@@ -238,10 +244,11 @@
       ctx.textBaseline = 'middle';
 
       ctx.font = '11px sans-serif';
-      ctx.fillText(label, x, y - 6);  // coordinates
+      ctx.fillText(label, x, y - 8);
 
       ctx.font = '10px sans-serif';
-      ctx.fillText(terrainName, x, y + 8);  // terrain name
+      let terrainLabel = terrainName.slice(0, 5);
+      ctx.fillText(showDanger ? `${terrainLabel} - ${dangerSymbol}` : terrainLabel, x, y + 8);
     }
 
     function getHexSpiral(radius) {
@@ -270,6 +277,7 @@
     function drawGrid() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       terrainMap.clear();
+      dangerMap.clear();
       const coords = getHexSpiral(MAP_RADIUS);
       const seedRef = { value: seed };
       let previousTerrain = seededChoice(seedRef, baseTerrainTypes);
@@ -282,16 +290,23 @@
           } while (newTerrain === previousTerrain);
           previousTerrain = newTerrain;
         }
+
+        const dangerRoll = seededD6(seedRef);
+        const dangerSymbol = dangerLevelSymbol(dangerRoll);
+
         terrainMap.set(`${q},${r}`, previousTerrain);
+        dangerMap.set(`${q},${r}`, dangerSymbol);
+
         const [x, y] = hexToPixel(q, r, HEX_RADIUS);
-        drawHex(x + canvas.width / 2, y + canvas.height / 2, HEX_RADIUS, getTerrainColor(previousTerrain), `${q},${r}`, previousTerrain.name);
+        drawHex(x + canvas.width / 2, y + canvas.height / 2, HEX_RADIUS, getTerrainColor(previousTerrain), `${q},${r}`, previousTerrain.name, dangerSymbol);
       }
     }
 
     function redrawHex(q, r) {
       const terrain = terrainMap.get(`${q},${r}`);
+      const danger = dangerMap.get(`${q},${r}`);
       const [x, y] = hexToPixel(q, r, HEX_RADIUS);
-      drawHex(x + canvas.width / 2, y + canvas.height / 2, HEX_RADIUS, getTerrainColor(terrain), `${q},${r}`, terrain.name);
+      drawHex(x + canvas.width / 2, y + canvas.height / 2, HEX_RADIUS, getTerrainColor(terrain), `${q},${r}`, terrain.name, danger);
     }
 
     toggleColorMode.addEventListener('click', () => {
@@ -301,6 +316,14 @@
         redrawHex(q, r);
       }
       updateLegendSwatches();
+    });
+
+    toggleDangerButton.addEventListener('click', () => {
+      showDanger = !showDanger;
+      for (const key of terrainMap.keys()) {
+        const [q, r] = key.split(',').map(Number);
+        redrawHex(q, r);
+      }
     });
 
     newMapButton.addEventListener('click', () => {
