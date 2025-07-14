@@ -11,5 +11,13 @@
     "hexmap"
   ],
   "author": "Thomas Amar <hello@ebabel.eu>",
-  "license": "ISC"
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ebabel-eu/hexmap.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ebabel-eu/hexmap/issues"
+  },
+  "homepage": "https://github.com/ebabel-eu/hexmap#readme"
 }
