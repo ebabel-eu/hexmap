@@ -28,22 +28,20 @@
 
     .legend {
       position: absolute;
-      bottom: 10px;
-      left: 10px;
+      top: 10px;
+      right: 10px;
       display: flex;
       gap: 20px;
       background: white;
-      padding: 5px 10px;
-      border: 1px solid #ccc;
       z-index: 1;
     }
 
-    .legend ul {
+    ul {
       padding-left: 0;
       margin: 0;
     }
 
-    .legend ul li {
+    ul li {
       list-style: none;
       display: flex;
       align-items: center;
@@ -124,6 +122,8 @@
   <canvas id="hexMap" width="1000" height="1000"></canvas>
   <div id="contextMenu" class="context-menu"></div>
 
+  <div id="poiList" style="display: block;"></div>
+
   <script>
     const canvas = document.getElementById('hexMap');
     const ctx = canvas.getContext('2d');
@@ -131,6 +131,7 @@
     const toggleColorMode = document.getElementById('toggleColorMode');
     const newMapButton = document.getElementById('newMapButton');
     const toggleDangerButton = document.getElementById('toggleDangerButton');
+    const poiListDiv = document.getElementById('poiList');
 
     const HEX_RADIUS = 44;
     const MAP_RADIUS = 6;
@@ -139,8 +140,16 @@
     let useGrayscale = false;
     let showDanger = true;
     let seed = Math.floor(Math.random() * 99999);
+
     let terrainMap = new Map();
     let dangerMap = new Map();
+    let poiMap = new Map();
+
+    const poiDescriptions = [
+      "Small tower", "Fortified keep", "Natural landmark", "Natural landmark", "Temple", "Barrow mounds",
+      "Village", "Village", "Town", "Town", "City", "Ravine", "Monster nest", "Monster nest",
+      "Hermit's abode", "Cave formation", "Cave formation", "Ancient dolmens", "Barbarian camp", "Holy shrine"
+    ];
 
     function seededRandom(seed) {
       let x = Math.sin(seed++) * 10000;
@@ -159,6 +168,12 @@
       return Math.floor(val * 6) + 1;
     }
 
+    function seededD20(seedRef) {
+      const val = seededRandom(seedRef.value);
+      seedRef.value++;
+      return Math.floor(val * 20);
+    }
+
     function dangerLevelSymbol(roll) {
       if (roll === 1) return 'S';
       if (roll <= 3) return 'U';
@@ -166,15 +181,14 @@
       return 'D';
     }
 
-    const style = getComputedStyle(document.documentElement);
     const baseTerrainTypes = [
-      { name: "Desert", grayscale: style.getPropertyValue('--terrain-desert').trim(), color: '#fceabb' },
-      { name: "Swamp", grayscale: style.getPropertyValue('--terrain-swamp').trim(), color: '#c6e2c1' },
-      { name: "Grassland", grayscale: style.getPropertyValue('--terrain-grassland').trim(), color: '#d5f5c9' },
-      { name: "Forest", grayscale: style.getPropertyValue('--terrain-forest').trim(), color: '#b0d9af' },
-      { name: "River", grayscale: style.getPropertyValue('--terrain-river').trim(), color: '#ccefff' },
-      { name: "Ocean", grayscale: style.getPropertyValue('--terrain-ocean').trim(), color: '#b2d4ee' },
-      { name: "Mountain", grayscale: style.getPropertyValue('--terrain-mountain').trim(), color: '#ddd3c1' }
+      { name: "Desert", grayscale: '#dddddd', color: '#fceabb' },
+      { name: "Swamp", grayscale: '#bbbbbb', color: '#c6e2c1' },
+      { name: "Grassland", grayscale: '#999999', color: '#d5f5c9' },
+      { name: "Forest", grayscale: '#777777', color: '#b0d9af' },
+      { name: "River", grayscale: '#555555', color: '#ccefff' },
+      { name: "Ocean", grayscale: '#333333', color: '#b2d4ee' },
+      { name: "Mountain", grayscale: '#111111', color: '#ddd3c1' }
     ];
 
     function getTerrainColor(terrain) {
@@ -217,7 +231,7 @@
       return { q, r };
     }
 
-    function drawHex(x, y, size, fillColor, label, terrainName, dangerSymbol) {
+    function drawHex(x, y, size, fillColor, label, terrainName, dangerSymbol, hasPOI) {
       ctx.beginPath();
       for (let i = 0; i < 6; i++) {
         const angle = Math.PI / 180 * (60 * i - 30);
@@ -233,23 +247,22 @@
       ctx.lineWidth = 2;
       ctx.stroke();
 
-      let textColor;
-      if (!useGrayscale) {
-        textColor = '#000000';
-      } else {
-        const blackTextTerrains = ["Desert", "Swamp"];
-        textColor = blackTextTerrains.includes(terrainName) ? '#000000' : '#ffffff';
-      }
-
+      const blackTextTerrains = ["Desert", "Swamp"];
+      const textColor = (!useGrayscale || blackTextTerrains.includes(terrainName)) ? '#000' : '#fff';
       ctx.fillStyle = textColor;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
 
       ctx.font = '11px sans-serif';
-      ctx.fillText(label, x, y - 8);
+      ctx.fillText(label, x, y - 10);
 
       ctx.font = '10px sans-serif';
-      ctx.fillText(showDanger ? `${terrainName} - ${dangerSymbol}` : terrainName, x, y + 8);
+      ctx.fillText(showDanger ? `${terrainName} - ${dangerSymbol}` : terrainName, x, y + 6);
+
+      if (showDanger && hasPOI) {
+        ctx.font = 'bold 9px sans-serif';
+        ctx.fillText("PoI", x, y + 20);
+      }
     }
 
     function getHexSpiral(radius) {
@@ -279,9 +292,12 @@
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       terrainMap.clear();
       dangerMap.clear();
+      poiMap.clear();
+      poiListDiv.innerHTML = '';
       const coords = getHexSpiral(MAP_RADIUS);
       const seedRef = { value: seed };
       let previousTerrain = seededChoice(seedRef, baseTerrainTypes);
+      const poiEntries = [];
 
       for (const { q, r } of coords) {
         if (seededRandom(seedRef.value++) < 1 / 36) {
@@ -292,39 +308,54 @@
           previousTerrain = newTerrain;
         }
 
+        const terrain = previousTerrain;
+        terrainMap.set(`${q},${r}`, terrain);
+
         const dangerRoll = seededD6(seedRef);
         const dangerSymbol = dangerLevelSymbol(dangerRoll);
-
-        terrainMap.set(`${q},${r}`, previousTerrain);
         dangerMap.set(`${q},${r}`, dangerSymbol);
 
+        let hasPOI = false;
+        if (seededD6(seedRef) === 1) {
+          const poiType = poiDescriptions[seededD20(seedRef)];
+          poiMap.set(`${q},${r}`, poiType);
+          poiEntries.push(`<li><strong>Hex ${q},${r}</strong>: ${poiType}</li>`);
+          hasPOI = true;
+        }
+
         const [x, y] = hexToPixel(q, r, HEX_RADIUS);
-        drawHex(x + canvas.width / 2, y + canvas.height / 2, HEX_RADIUS, getTerrainColor(previousTerrain), `${q},${r}`, previousTerrain.name, dangerSymbol);
+        drawHex(x + canvas.width / 2, y + canvas.height / 2, HEX_RADIUS, getTerrainColor(terrain), `${q},${r}`, terrain.name, dangerSymbol, hasPOI);
+      }
+
+      if (showDanger && poiEntries.length > 0) {
+        poiListDiv.innerHTML = `<h3>Points of Interest (DM only)</h3><ul>${poiEntries.join('')}</ul>`;
+        poiListDiv.style.display = 'block';
+      } else {
+        poiListDiv.innerHTML = '';
+        poiListDiv.style.display = 'none';
       }
     }
 
     function redrawHex(q, r) {
       const terrain = terrainMap.get(`${q},${r}`);
       const danger = dangerMap.get(`${q},${r}`);
+      const hasPOI = poiMap.has(`${q},${r}`);
       const [x, y] = hexToPixel(q, r, HEX_RADIUS);
-      drawHex(x + canvas.width / 2, y + canvas.height / 2, HEX_RADIUS, getTerrainColor(terrain), `${q},${r}`, terrain.name, danger);
+      drawHex(x + canvas.width / 2, y + canvas.height / 2, HEX_RADIUS, getTerrainColor(terrain), `${q},${r}`, terrain.name, danger, hasPOI);
     }
 
     toggleColorMode.addEventListener('click', () => {
       useGrayscale = !useGrayscale;
+      updateLegendSwatches();
       for (const key of terrainMap.keys()) {
         const [q, r] = key.split(',').map(Number);
         redrawHex(q, r);
       }
-      updateLegendSwatches();
     });
 
     toggleDangerButton.addEventListener('click', () => {
       showDanger = !showDanger;
-      for (const key of terrainMap.keys()) {
-        const [q, r] = key.split(',').map(Number);
-        redrawHex(q, r);
-      }
+      drawGrid(); // ✅ Redraw full grid and toggle #poiList visibility
     });
 
     newMapButton.addEventListener('click', () => {
