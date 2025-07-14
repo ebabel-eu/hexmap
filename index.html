@@ -1,16 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <title>Hex Map Generator</title>
   <style>
+    :root {
+      --terrain-desert: #f4e2b9;
+      --terrain-swamp: #9fc88f;
+      --terrain-grassland: #c9e27f;
+      --terrain-forest: #69a74e;
+      --terrain-river: #a3d1e6;
+      --terrain-ocean: #3c79b3;
+      --terrain-mountain: #999999;
+    }
+
     body {
       font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
       font-size: 12px;
     }
 
     canvas {
-      background-color: #ffffff; /* Changed to white */
+      background-color: #ffffff;
       display: block;
       margin: auto;
     }
@@ -25,25 +36,35 @@
       padding: 5px 10px;
       border: 1px solid #ccc;
     }
+
     .legend ul {
       padding-left: 0;
       margin: 0;
     }
+
     .legend ul li {
       list-style: none;
     }
+
+    .swatch {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 1px solid #000;
+    }
   </style>
 </head>
+
 <body>
   <div class="legend">
     <ul>
-      <li>Desert or Arctic</li>
-      <li>Swamp</li>
-      <li>Grassland</li>
-      <li>Forest or Jungle</li>
-      <li>River or Coast</li>
-      <li>Ocean</li>
-      <li>Mountain</li>
+      <li><span class="swatch" style="background: var(--terrain-desert);"></span> Desert or Arctic</li>
+      <li><span class="swatch" style="background: var(--terrain-swamp);"></span> Swamp</li>
+      <li><span class="swatch" style="background: var(--terrain-grassland);"></span> Grassland</li>
+      <li><span class="swatch" style="background: var(--terrain-forest);"></span> Forest or Jungle</li>
+      <li><span class="swatch" style="background: var(--terrain-river);"></span> River or Coast</li>
+      <li><span class="swatch" style="background: var(--terrain-ocean);"></span> Ocean</li>
+      <li><span class="swatch" style="background: var(--terrain-mountain);"></span> Mountain</li>
     </ul>
     <ul>
       <li>Walking: 4 hours</li>
@@ -54,58 +75,70 @@
     </ul>
   </div>
 
-<canvas id="hexMap" width="1000" height="1000"></canvas>
+  <canvas id="hexMap" width="1000" height="1000"></canvas>
 
-<script>
-  const canvas = document.getElementById('hexMap');
-  const ctx = canvas.getContext('2d');
+  <script>
+    const canvas = document.getElementById('hexMap');
+    const ctx = canvas.getContext('2d');
 
-  const HEX_RADIUS = 44;
-  const MAP_RADIUS = 6; // controls overall hexagon size
-  const HEX_COLOR = '#000000';
-  const TEXT_COLOR = '#000000';
+    const HEX_RADIUS = 44;
+    const MAP_RADIUS = 6; // controls overall hexagon size
+    const HEX_COLOR = '#000000';
+    const TEXT_COLOR = '#000000';
 
-  function hexToPixel(q, r, size) {
-    const x = size * (3 / 2 * q);
-    const y = size * (Math.sqrt(3) * (r + q / 2));
-    return [x, y];
-  }
+    const style = getComputedStyle(document.documentElement);
+    const terrainTypes = [
+      { name: "Desert or Arctic", color: style.getPropertyValue('--terrain-desert').trim() },
+      { name: "Swamp", color: style.getPropertyValue('--terrain-swamp').trim() },
+      { name: "Grassland", color: style.getPropertyValue('--terrain-grassland').trim() },
+      { name: "Forest or Jungle", color: style.getPropertyValue('--terrain-forest').trim() },
+      { name: "River or Coast", color: style.getPropertyValue('--terrain-river').trim() },
+      { name: "Ocean", color: style.getPropertyValue('--terrain-ocean').trim() },
+      { name: "Mountain", color: style.getPropertyValue('--terrain-mountain').trim() }
+    ];
 
-  function drawHex(x, y, size, label) {
-    ctx.beginPath();
-    for (let i = 0; i < 6; i++) {
-      const angle = Math.PI / 180 * (60 * i);
-      const px = x + size * Math.cos(angle);
-      const py = y + size * Math.sin(angle);
-      if (i === 0) ctx.moveTo(px, py);
-      else ctx.lineTo(px, py);
+    function hexToPixel(q, r, size) {
+      const x = size * (3 / 2 * q);
+      const y = size * (Math.sqrt(3) * (r + q / 2));
+      return [x, y];
     }
-    ctx.closePath();
-    ctx.strokeStyle = HEX_COLOR;
-    ctx.lineWidth = 2;
-    ctx.stroke();
 
-    ctx.fillStyle = TEXT_COLOR;
-    ctx.font = '12px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(label, x, y);
-  }
+    function drawHex(x, y, size, label) {
+      ctx.beginPath();
+      for (let i = 0; i < 6; i++) {
+        const angle = Math.PI / 180 * (60 * i);
+        const px = x + size * Math.cos(angle);
+        const py = y + size * Math.sin(angle);
+        if (i === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.strokeStyle = HEX_COLOR;
+      ctx.lineWidth = 2;
+      ctx.stroke();
 
-  function drawGrid() {
-    for (let q = -MAP_RADIUS; q <= MAP_RADIUS; q++) {
-      for (let r = -MAP_RADIUS; r <= MAP_RADIUS; r++) {
-        const s = -q - r;
-        if (Math.abs(s) <= MAP_RADIUS) {
-          const [x, y] = hexToPixel(q, r, HEX_RADIUS);
-          drawHex(x + canvas.width / 2, y + canvas.height / 2, HEX_RADIUS, `${q},${r}`);
+      ctx.fillStyle = TEXT_COLOR;
+      ctx.font = '12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, x, y);
+    }
+
+    function drawGrid() {
+      for (let q = -MAP_RADIUS; q <= MAP_RADIUS; q++) {
+        for (let r = -MAP_RADIUS; r <= MAP_RADIUS; r++) {
+          const s = -q - r;
+          if (Math.abs(s) <= MAP_RADIUS) {
+            const [x, y] = hexToPixel(q, r, HEX_RADIUS);
+            drawHex(x + canvas.width / 2, y + canvas.height / 2, HEX_RADIUS, `${q},${r}`);
+          }
         }
       }
     }
-  }
 
-  drawGrid();
-</script>
+    drawGrid();
+  </script>
 
 </body>
+
 </html>
