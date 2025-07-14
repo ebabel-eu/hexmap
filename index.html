@@ -151,6 +151,18 @@
       "Village", "Village", "Town", "Town", "City", "Ravine", "Monster nest", "Monster nest",
       "Hermit's abode", "Cave formation", "Cave formation", "Ancient dolmens", "Barbarian camp", "Holy shrine"
     ];
+    const villageNames = [
+      "Bruga's Hold", "Lastwatch", "Darkwater", "Ostlin",
+      "Treefall", "Vorn", "Hillshire", "Nighthaven"
+    ];
+    const townNames = [
+      "Fairhollow", "Ivan's Keep", "Galina", "Brightlantern",
+      "Corvin's Crest", "Ironbridge", "Skalvin", "Toresk"
+    ];
+    const cityNames = [
+      "Doraine", "Meridia", "King's Gate", "Myrkhos",
+      "Rularn", "Ordos", "Thane", "Rahgbat"
+    ];
 
     function seededRandom(seed) {
       let x = Math.sin(seed++) * 10000;
@@ -167,6 +179,12 @@
       const val = seededRandom(seedRef.value);
       seedRef.value++;
       return Math.floor(val * 6) + 1;
+    }
+
+    function seededD8(seedRef) {
+      const val = seededRandom(seedRef.value);
+      seedRef.value++;
+      return Math.floor(val * 8) + 1;
     }
 
     function seededD20(seedRef) {
@@ -306,7 +324,16 @@
 
         let hasPOI = poiMap.has(key);
         if (!drawOnly && seededD6(seedRef) === 1) {
-          const poiType = poiDescriptions[seededD20(seedRef)];
+          let poiType = poiDescriptions[seededD20(seedRef)];
+
+          if (poiType === "Village") {
+            poiType += ": " + villageNames[seededD8(seedRef) - 1];
+          } else if (poiType === "Town") {
+            poiType += ": " + townNames[seededD8(seedRef) - 1];
+          } else if (poiType === "City") {
+            poiType += ": " + cityNames[seededD8(seedRef) - 1];
+          }
+
           poiMap.set(key, poiType);
           poiEntries.push(`<li><strong>${hexId}</strong>: ${poiType}</li>`);
           hasPOI = true;
