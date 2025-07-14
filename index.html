@@ -84,21 +84,27 @@
       left: 10px;
       z-index: 2;
     }
+
+    @media print {
+      #toggleColorMode {
+        display: none;
+      }
+    }
   </style>
 </head>
 <body>
 
-  <button id="toggleColorMode">Toggle Color Mode</button>
+  <button id="toggleColorMode">Colour / Grayscale</button>
 
   <div class="legend">
     <ul>
-      <li><span class="swatch" style="background: var(--terrain-desert);"></span> Desert</li>
-      <li><span class="swatch" style="background: var(--terrain-swamp);"></span> Swamp</li>
-      <li><span class="swatch" style="background: var(--terrain-grassland);"></span> Grassland</li>
-      <li><span class="swatch" style="background: var(--terrain-forest);"></span> Forest</li>
-      <li><span class="swatch" style="background: var(--terrain-river);"></span> River</li>
-      <li><span class="swatch" style="background: var(--terrain-ocean);"></span> Ocean</li>
-      <li><span class="swatch" style="background: var(--terrain-mountain);"></span> Mountain</li>
+      <li><span class="swatch" id="swatch-desert" style="background: var(--terrain-desert);"></span> Desert</li>
+      <li><span class="swatch" id="swatch-swamp" style="background: var(--terrain-swamp);"></span> Swamp</li>
+      <li><span class="swatch" id="swatch-grassland" style="background: var(--terrain-grassland);"></span> Grassland</li>
+      <li><span class="swatch" id="swatch-forest" style="background: var(--terrain-forest);"></span> Forest</li>
+      <li><span class="swatch" id="swatch-river" style="background: var(--terrain-river);"></span> River</li>
+      <li><span class="swatch" id="swatch-ocean" style="background: var(--terrain-ocean);"></span> Ocean</li>
+      <li><span class="swatch" id="swatch-mountain" style="background: var(--terrain-mountain);"></span> Mountain</li>
     </ul>
     <ul>
       <li>Walking: 4 hours</li>
@@ -122,7 +128,7 @@
     const MAP_RADIUS = 6;
     const HEX_COLOR = '#000000';
 
-    let useGrayscale = true;
+    let useGrayscale = false; // default to COLOR mode
 
     const style = getComputedStyle(document.documentElement);
     const baseTerrainTypes = [
@@ -141,9 +147,16 @@
       return useGrayscale ? terrain.grayscale : terrain.color;
     }
 
+    function updateLegendSwatches() {
+      baseTerrainTypes.forEach(t => {
+        const el = document.getElementById(`swatch-${t.name.toLowerCase()}`);
+        if (el) el.style.background = getTerrainColor(t);
+      });
+    }
+
     function hexToPixel(q, r, size) {
-      const x = size * Math.sqrt(3) * (q + r/2);
-      const y = size * 3/2 * r;
+      const x = size * Math.sqrt(3) * (q + r / 2);
+      const y = size * 3 / 2 * r;
       return [x, y];
     }
 
@@ -254,6 +267,7 @@
         const [q, r] = key.split(',').map(Number);
         redrawHex(q, r);
       }
+      updateLegendSwatches();
     });
 
     canvas.addEventListener("contextmenu", (e) => {
@@ -288,6 +302,7 @@
     });
 
     drawGrid();
+    updateLegendSwatches(); // Call once on load
   </script>
 </body>
 </html>
