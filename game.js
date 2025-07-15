@@ -40,7 +40,6 @@ function initApp(data) {
   const cataclysmTypes = data.cataclysmTypes;
   const baseTerrainTypes = data.baseTerrainTypes;
 
-  // --- RANDOM UTILITIES ---
   function seededRandom(seed) {
     let x = Math.sin(seed++) * 10000;
     return x - Math.floor(x);
@@ -57,7 +56,6 @@ function initApp(data) {
     return Math.floor(Math.random() * sides) + 1;
   }
 
-  // --- DRAWING ---
   function hexToPixel(q, r, size) {
     const x = size * Math.sqrt(3) * (q + r / 2);
     const y = size * 3 / 2 * r;
@@ -120,7 +118,6 @@ function initApp(data) {
     });
   }
 
-  // --- DANGER & DRAWGRID ---
   function dangerLevelSymbol(roll) {
     if (roll === 1) return 'S';
     if (roll <= 3) return 'U';
@@ -200,7 +197,6 @@ function initApp(data) {
     }
   }
 
-  // --- EVENT HANDLERS ---
   toggleColourMode.addEventListener('click', () => {
     useGrayscale = !useGrayscale;
     updateLegendSwatches();
@@ -271,7 +267,6 @@ function initApp(data) {
     return { q, r };
   }
 
-  // Initial draw.
   drawGrid();
   updateLegendSwatches();
 }
