@@ -9,8 +9,6 @@ async function loadApp() {
 }
 
 function initApp(data) {
-  console.log('App started with data:', data);
-
   const canvas = document.getElementById('hexMap');
   const ctx = canvas.getContext('2d');
   const contextMenu = document.getElementById('contextMenu');
