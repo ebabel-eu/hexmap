@@ -845,5 +845,6 @@
   ],
   "hexRadius": 44,
   "mapRadius": 6,
-  "hexColour": "#000000"
+  "hexColour": "#000000",
+  "maxPoiCount": 23
 }

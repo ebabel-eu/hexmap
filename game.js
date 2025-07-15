@@ -20,6 +20,8 @@ function initApp(data) {
   const HEX_RADIUS = data.hexRadius;
   const MAP_RADIUS = data.mapRadius;
   const HEX_COLOUR = data.hexColour;
+  const MAX_POI_COUNT = data.maxPoiCount;
+
 
   let useGrayscale = false;
   let showDanger = true;
@@ -143,6 +145,7 @@ function initApp(data) {
     const coords = getHexSpiral(MAP_RADIUS);
     const seedRef = { value: seed };
     let previousTerrain = seededChoice(seedRef, baseTerrainTypes);
+    let poiCount = 0;
 
     coords.forEach(({ q, r }, index) => {
       const hexId = index + 1;
@@ -170,7 +173,7 @@ function initApp(data) {
       }
 
       let hasPOI = poiMap.has(key);
-      if (!drawOnly && randomDie(6) === 1) {
+      if (!drawOnly && poiCount < MAX_POI_COUNT && randomDie(6) === 1) {
         let poiType = poiDescriptions[randomDie(poiDescriptions.length) - 1];
         if (poiType === "Village") poiType += ": " + villageNames[randomDie(villageNames.length) - 1];
         else if (poiType === "Town") poiType += ": " + townNames[randomDie(townNames.length) - 1];
@@ -192,6 +195,7 @@ function initApp(data) {
         const fullPOI = `${poiType} (${development})`;
         poiMap.set(key, fullPOI);
         hasPOI = true;
+        poiCount++;
       }
 
       const [x, y] = hexToPixel(q, r, HEX_RADIUS);
@@ -202,9 +206,9 @@ function initApp(data) {
       const listItems = [...poiMap.entries()].map(([key, val]) => {
         const id = hexNumberMap.get(key);
         return `<li data-key="${key}">
-          <strong>${id}</strong>:
-          <span class="poi-text" contenteditable="true">${val}</span>
-        </li>`;
+        <strong>${id}</strong>:
+        <span class="poi-text" contenteditable="true">${val}</span>
+      </li>`;
       });
       poiListDiv.innerHTML = `<h3>Points of Interest (DM only)</h3><ul>${listItems.join('')}</ul>`;
       poiListDiv.style.display = 'block';
