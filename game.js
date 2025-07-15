@@ -39,19 +39,18 @@ function initApp(data) {
 
   let availablePoiDevelopments = [];
 
-  function seededRandom(seed) {
-    let x = Math.sin(seed++) * 10000;
+  function seededRandom(seedRef) {
+    let x = Math.sin(seedRef.value++) * 10000;
     return x - Math.floor(x);
   }
 
   function seededChoice(seedRef, list) {
-    const val = seededRandom(seedRef.value);
-    seedRef.value++;
+    const val = seededRandom(seedRef);
     return list[Math.floor(val * list.length)];
   }
 
   function seededDie(seedRef, sides) {
-    return Math.floor(seededRandom(seedRef.value++) * sides) + 1;
+    return Math.floor(seededRandom(seedRef) * sides) + 1;
   }
 
   function randomDie(sides) {
@@ -152,7 +151,7 @@ function initApp(data) {
 
       let terrain = terrainMap.get(key);
       if (!terrain) {
-        if (seededRandom(seedRef.value++) < 1 / 36) {
+        if (seededRandom(seedRef) < 1 / 36) {
           let newTerrain;
           do {
             newTerrain = seededChoice(seedRef, baseTerrainTypes);
