@@ -14,14 +14,14 @@ function initApp(data) {
   const canvas = document.getElementById('hexMap');
   const ctx = canvas.getContext('2d');
   const contextMenu = document.getElementById('contextMenu');
-  const toggleColorMode = document.getElementById('toggleColorMode');
+  const toggleColourMode = document.getElementById('toggleColourMode');
   const newMapButton = document.getElementById('newMapButton');
   const toggleDangerButton = document.getElementById('toggleDangerButton');
   const poiListDiv = document.getElementById('poiList');
 
   const HEX_RADIUS = data.hexRadius;
   const MAP_RADIUS = data.mapRadius;
-  const HEX_COLOR = data.hexColor;
+  const HEX_COLOUR = data.hexColour;
 
   let useGrayscale = false;
   let showDanger = true;
@@ -63,7 +63,7 @@ function initApp(data) {
     const y = size * 3 / 2 * r;
     return [x, y];
   }
-  function drawHex(x, y, size, fillColor, label, terrainName, dangerSymbol, hasPOI) {
+  function drawHex(x, y, size, fillColour, label, terrainName, dangerSymbol, hasPOI) {
     ctx.beginPath();
     for (let i = 0; i < 6; i++) {
       const angle = Math.PI / 180 * (60 * i - 30);
@@ -72,15 +72,15 @@ function initApp(data) {
       i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
     }
     ctx.closePath();
-    ctx.fillStyle = fillColor;
+    ctx.fillStyle = fillColour;
     ctx.fill();
-    ctx.strokeStyle = HEX_COLOR;
+    ctx.strokeStyle = HEX_COLOUR;
     ctx.lineWidth = 2;
     ctx.stroke();
 
     const blackTextTerrains = ["Desert", "Swamp"];
-    const textColor = (!useGrayscale || blackTextTerrains.includes(terrainName)) ? '#000' : '#fff';
-    ctx.fillStyle = textColor;
+    const textColour = (!useGrayscale || blackTextTerrains.includes(terrainName)) ? '#000' : '#fff';
+    ctx.fillStyle = textColour;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
@@ -110,13 +110,13 @@ function initApp(data) {
     }
     return results;
   }
-  function getTerrainColor(terrain) {
-    return useGrayscale ? terrain.grayscale : terrain.color;
+  function getTerrainColour(terrain) {
+    return useGrayscale ? terrain.grayscale : terrain.colour;
   }
   function updateLegendSwatches() {
     baseTerrainTypes.forEach(t => {
       const el = document.getElementById(`swatch-${t.name.toLowerCase()}`);
-      if (el) el.style.background = getTerrainColor(t);
+      if (el) el.style.background = getTerrainColour(t);
     });
   }
 
@@ -184,7 +184,7 @@ function initApp(data) {
       }
 
       const [x, y] = hexToPixel(q, r, HEX_RADIUS);
-      drawHex(x + canvas.width / 2, y + canvas.height / 2, HEX_RADIUS, getTerrainColor(terrain), hexId, terrain.name, danger, hasPOI);
+      drawHex(x + canvas.width / 2, y + canvas.height / 2, HEX_RADIUS, getTerrainColour(terrain), hexId, terrain.name, danger, hasPOI);
     });
 
     if (showDanger && poiMap.size > 0) {
@@ -201,7 +201,7 @@ function initApp(data) {
   }
 
   // --- EVENT HANDLERS ---
-  toggleColorMode.addEventListener('click', () => {
+  toggleColourMode.addEventListener('click', () => {
     useGrayscale = !useGrayscale;
     updateLegendSwatches();
     drawGrid(true);
@@ -232,7 +232,7 @@ function initApp(data) {
     baseTerrainTypes.forEach(t => {
       const item = document.createElement('div');
       item.className = 'context-menu-item';
-      item.innerHTML = `<span class="swatch" style="background:${getTerrainColor(t)}"></span>${t.name}`;
+      item.innerHTML = `<span class="swatch" style="background:${getTerrainColour(t)}"></span>${t.name}`;
       item.onclick = () => {
         terrainMap.set(key, t);
         redrawHex(rounded.q, rounded.r);
@@ -256,7 +256,7 @@ function initApp(data) {
     const hasPOI = poiMap.has(key);
     const hexId = hexNumberMap.get(key);
     const [x, y] = hexToPixel(q, r, HEX_RADIUS);
-    drawHex(x + canvas.width / 2, y + canvas.height / 2, HEX_RADIUS, getTerrainColor(terrain), hexId, terrain.name, danger, hasPOI);
+    drawHex(x + canvas.width / 2, y + canvas.height / 2, HEX_RADIUS, getTerrainColour(terrain), hexId, terrain.name, danger, hasPOI);
   }
   function hexRound(qf, rf) {
     const sf = -qf - rf;

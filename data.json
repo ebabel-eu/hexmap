@@ -527,7 +527,7 @@
     "Bathed in light, yet no sun shines",
     "Where ancient machines still run",
     "Home to a mask that makes one forget their face",
-    "All colors appear inverted",
+    "All colours appear inverted",
     "Children born here grow too fast",
     "With a fountain that restores youth, at a cost",
     "Surrounded by trees that whisper secrets",
@@ -568,40 +568,40 @@
     {
       "name": "Desert",
       "grayscale": "#dddddd",
-      "color": "#fceabb"
+      "colour": "#fceabb"
     },
     {
       "name": "Swamp",
       "grayscale": "#bbbbbb",
-      "color": "#c6e2c1"
+      "colour": "#c6e2c1"
     },
     {
       "name": "Grassland",
       "grayscale": "#999999",
-      "color": "#d5f5c9"
+      "colour": "#d5f5c9"
     },
     {
       "name": "Forest",
       "grayscale": "#777777",
-      "color": "#b0d9af"
+      "colour": "#b0d9af"
     },
     {
       "name": "River",
       "grayscale": "#555555",
-      "color": "#ccefff"
+      "colour": "#ccefff"
     },
     {
       "name": "Ocean",
       "grayscale": "#333333",
-      "color": "#b2d4ee"
+      "colour": "#b2d4ee"
     },
     {
       "name": "Mountain",
       "grayscale": "#111111",
-      "color": "#ddd3c1"
+      "colour": "#ddd3c1"
     }
   ],
   "hexRadius": 44,
   "mapRadius": 6,
-  "hexColor": "#000000"
+  "hexColour": "#000000"
 }
