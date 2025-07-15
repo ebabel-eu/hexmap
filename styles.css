@@ -98,8 +98,27 @@ ul li {
   content: "3h";
 }
 
+.poi-text {
+  display: inline-block;
+  min-width: 100px;
+  padding: 2px 4px;
+  border: 1px dashed #ccc;
+  border-radius: 3px;
+  cursor: text;
+}
+.poi-text:focus {
+  outline: none;
+  border-color: #666;
+  background: #f8f8f8;
+}
+
 @media print {
   #buttons {
     display: none;
+  }
+
+  .poi-text {
+    border: none;
+    padding: inherit;
   }
 }

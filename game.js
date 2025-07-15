@@ -201,7 +201,10 @@ function initApp(data) {
     if (showDanger && poiMap.size > 0) {
       const listItems = [...poiMap.entries()].map(([key, val]) => {
         const id = hexNumberMap.get(key);
-        return `<li><strong>${id}</strong>: ${val}</li>`;
+        return `<li data-key="${key}">
+          <strong>${id}</strong>:
+          <span class="poi-text" contenteditable="true">${val}</span>
+        </li>`;
       });
       poiListDiv.innerHTML = `<h3>Points of Interest (DM only)</h3><ul>${listItems.join('')}</ul>`;
       poiListDiv.style.display = 'block';
@@ -226,6 +229,15 @@ function initApp(data) {
     seed = Math.floor(Math.random() * 99999);
     terrainMap.clear();
     drawGrid(false);
+  });
+
+  poiListDiv.addEventListener('input', (e) => {
+    if (e.target.classList.contains('poi-text')) {
+      const li = e.target.closest('li');
+      const key = li.dataset.key;
+      const newText = e.target.textContent.trim();
+      poiMap.set(key, newText);
+    }
   });
 
   canvas.addEventListener("contextmenu", (e) => {
