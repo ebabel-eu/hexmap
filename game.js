@@ -34,22 +34,26 @@ function initApp(data) {
   const villageNames = data.villageNames;
   const townNames = data.townNames;
   const cityNames = data.cityNames;
-  const poiDevelopments = data.poiDevelopments;
-  const cataclysmTypes = data.cataclysmTypes;
   const baseTerrainTypes = data.baseTerrainTypes;
+  const cataclysmTypes = data.cataclysmTypes;
+
+  let availablePoiDevelopments = [];
 
   function seededRandom(seed) {
     let x = Math.sin(seed++) * 10000;
     return x - Math.floor(x);
   }
+
   function seededChoice(seedRef, list) {
     const val = seededRandom(seedRef.value);
     seedRef.value++;
     return list[Math.floor(val * list.length)];
   }
+
   function seededDie(seedRef, sides) {
     return Math.floor(seededRandom(seedRef.value++) * sides) + 1;
   }
+
   function randomDie(sides) {
     return Math.floor(Math.random() * sides) + 1;
   }
@@ -59,6 +63,7 @@ function initApp(data) {
     const y = size * 3 / 2 * r;
     return [x, y];
   }
+
   function drawHex(x, y, size, fillColour, label, terrainName, dangerSymbol, hasPOI) {
     ctx.beginPath();
     for (let i = 0; i < 6; i++) {
@@ -89,6 +94,7 @@ function initApp(data) {
       ctx.fillText("PoI", x, y + 20);
     }
   }
+
   function getHexSpiral(radius) {
     const results = [{ q: 0, r: 0 }];
     const dirs = [{ q: 1, r: 0 }, { q: 1, r: -1 }, { q: 0, r: -1 }, { q: -1, r: 0 }, { q: -1, r: 1 }, { q: 0, r: 1 }];
@@ -106,9 +112,11 @@ function initApp(data) {
     }
     return results;
   }
+
   function getTerrainColour(terrain) {
     return useGrayscale ? terrain.grayscale : terrain.colour;
   }
+
   function updateLegendSwatches() {
     baseTerrainTypes.forEach(t => {
       const el = document.getElementById(`swatch-${t.name.toLowerCase()}`);
@@ -122,6 +130,7 @@ function initApp(data) {
     if (roll <= 5) return 'R';
     return 'D';
   }
+
   function drawGrid(drawOnly = false) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (!drawOnly) {
@@ -129,6 +138,7 @@ function initApp(data) {
       poiMap.clear();
       hexNumberMap.clear();
       poiListDiv.innerHTML = '';
+      availablePoiDevelopments = [...new Set(data.poiDevelopments)];
     }
 
     const coords = getHexSpiral(MAP_RADIUS);
@@ -167,7 +177,14 @@ function initApp(data) {
         else if (poiType === "Town") poiType += ": " + townNames[randomDie(townNames.length) - 1];
         else if (poiType === "City") poiType += ": " + cityNames[randomDie(cityNames.length) - 1];
 
-        let development = poiDevelopments[randomDie(poiDevelopments.length) - 1];
+        let development;
+        if (availablePoiDevelopments.length > 0) {
+          const i = randomDie(availablePoiDevelopments.length) - 1;
+          development = availablePoiDevelopments.splice(i, 1)[0];
+        } else {
+          development = data.poiDevelopments[randomDie(data.poiDevelopments.length) - 1];
+        }
+
         if (development === "Cataclysm") {
           const cataclysm = cataclysmTypes[randomDie(cataclysmTypes.length) - 1];
           development = `Cataclysm: ${cataclysm}`;
@@ -200,10 +217,12 @@ function initApp(data) {
     updateLegendSwatches();
     drawGrid(true);
   });
+
   toggleDangerButton.addEventListener('click', () => {
     showDanger = !showDanger;
     drawGrid(true);
   });
+
   newMapButton.addEventListener('click', () => {
     seed = Math.floor(Math.random() * 99999);
     terrainMap.clear();
@@ -243,6 +262,7 @@ function initApp(data) {
   window.addEventListener('click', () => {
     contextMenu.style.display = 'none';
   });
+
   function redrawHex(q, r) {
     const key = `${q},${r}`;
     const terrain = terrainMap.get(key);
@@ -252,6 +272,7 @@ function initApp(data) {
     const [x, y] = hexToPixel(q, r, HEX_RADIUS);
     drawHex(x + canvas.width / 2, y + canvas.height / 2, HEX_RADIUS, getTerrainColour(terrain), hexId, terrain.name, danger, hasPOI);
   }
+
   function hexRound(qf, rf) {
     const sf = -qf - rf;
     let q = Math.round(qf);
