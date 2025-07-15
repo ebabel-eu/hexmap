@@ -19,9 +19,9 @@ function initApp(data) {
   const toggleDangerButton = document.getElementById('toggleDangerButton');
   const poiListDiv = document.getElementById('poiList');
 
-  const HEX_RADIUS = 44;
-  const MAP_RADIUS = 6;
-  const HEX_COLOR = '#000000';
+  const HEX_RADIUS = data.hexRadius;
+  const MAP_RADIUS = data.mapRadius;
+  const HEX_COLOR = data.hexColor;
 
   let useGrayscale = false;
   let showDanger = true;

@@ -600,5 +600,8 @@
       "grayscale": "#111111",
       "color": "#ddd3c1"
     }
-  ]
+  ],
+  "hexRadius": 44,
+  "mapRadius": 6,
+  "hexColor": "#000000"
 }
