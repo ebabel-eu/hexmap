@@ -8,10 +8,13 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
-    "hexmap"
+    "hexmap",
+    "rpg",
+    "map",
+    "fantasy"
   ],
   "author": "Thomas Amar <hello@ebabel.eu>",
-  "license": "ISC",
+  "license": "GPL-3.0-or-later",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ebabel-eu/hexmap.git"
